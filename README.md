@@ -1,6 +1,6 @@
 # FloodIntel frontend
 
-The React demo opens with the authentication flow from the Figma draft. Signing in opens the Field Reporter form, which uses a provisional layout and water level unit (centimeters).
+The React demo opens with the authentication flow from the Figma draft. Signing in opens the Field Reporter home.
 
 ## Open in VS Code
 
@@ -24,6 +24,9 @@ The React demo opens with the authentication flow from the Figma draft. Signing 
 Authentication and password changes are stored in the browser for the synthetic demo account. Clear this site's data to restore the initial password. Real authentication, email delivery, and account management require the Laravel backend.
 
 ## Try the Field Reporter workflow
+
+- From Home, open **View All** to see My Reports or **Submit Flood Report** to open the form. On mobile, the camera-plus button also opens the form. On desktop, My Reports and Submit are available in the sidebar.
+- Open **Profile** to log out. Home uses sample data and includes simulated reports submitted during the current visit. The form currently uses centimeters for water level.
 
 - Submit an empty form and check the required field messages.
 - Enter water level and affected households, choose a sample image, and capture location.

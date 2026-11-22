@@ -1,13 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import Authentication from './Authentication';
+import ReporterWorkspace from './ReporterWorkspace';
 import { isSignedIn, signOut } from './authService';
 import { submitFloodReport } from './reportService';
 import './styles.css';
 
 const emptyFields = { waterLevel: '', households: '' };
 
-function FieldReporter({ onSignOut }) {
+function FieldReporter({ onSubmitted }) {
   const [fields, setFields] = useState(emptyFields);
   const [photo, setPhoto] = useState(null);
   const [location, setLocation] = useState(null);
@@ -89,7 +90,9 @@ function FieldReporter({ onSignOut }) {
     };
     setSending(true);
     try {
-      setConfirmation(await submitFloodReport(report.current, { simulateFailure }));
+      const result = await submitFloodReport(report.current, { simulateFailure });
+      setConfirmation(result);
+      onSubmitted(report.current, result);
     } catch (error) {
       setFailure(error.message);
     } finally {
@@ -109,15 +112,7 @@ function FieldReporter({ onSignOut }) {
   }
 
   return (
-    <>
-      <header className="topbar">
-        <div className="topbar-content">
-          <strong>FloodIntel</strong>
-          <span>Demo mode · Sample data</span>
-          <button type="button" className="secondary" onClick={onSignOut}>Log Out</button>
-        </div>
-      </header>
-      <main>
+      <section className="reporter-inner">
         <p className="section-label">Field Reporter</p>
         <h1>New flood report</h1>
         <p className="intro">Record the observed water level, affected households, photo, and location.</p>
@@ -172,8 +167,7 @@ function FieldReporter({ onSignOut }) {
             </button>
           </form>
         )}
-      </main>
-    </>
+      </section>
   );
 }
 
@@ -207,7 +201,7 @@ function App() {
     setToken(null);
   }
 
-  return signedIn && token === null ? <FieldReporter onSignOut={() => {
+  return signedIn && token === null ? <ReporterWorkspace renderReportForm={(onSubmitted) => <FieldReporter onSubmitted={onSubmitted} />} onSignOut={() => {
     signOut();
     setSignedIn(false);
   }} /> : <Authentication key={token ?? 'auth'} token={token} entryScreen={entryScreen}
