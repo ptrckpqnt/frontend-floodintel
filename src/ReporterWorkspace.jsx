@@ -1,15 +1,21 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { demoEmail, demoPhone } from './authService';
 
 const examples = [
-  { id: 'sample-aroma', location: 'Aroma Street', when: 'Sample report', dateLabel: 'Jun 24, 01:23 AM', waterLevel: 'Waist-deep (50–100 cm)', status: 'Awaiting Review' },
-  { id: 'sample-villena', location: 'Villena Street', when: 'Sample report', dateLabel: 'Jun 23, 10:47 AM', waterLevel: 'Waist-deep (50–100 cm)', status: 'Awaiting Review' },
+  { id: 'sample-aroma', location: 'Aroma Street', when: 'Sample report', dateLabel: 'Jun 24, 01:23 AM', waterLevel: '75 cm', status: 'Awaiting Review',
+    landmark: 'Near irrigation', latitude: 14.945767, longitude: 120.786809, waterFlow: 'Fast',
+    estimatedAffectedFamilies: 12, description: 'Water is rising along the street. Residents are requesting evacuation assistance.',
+    evacuationNeeded: true, accessibleByRescueBoat: true, vulnerableResidents: 'Present' },
+  { id: 'sample-villena', location: 'Villena Street', when: 'Sample report', dateLabel: 'Jun 23, 10:47 AM', waterLevel: '55 cm', status: 'Awaiting Review' },
 ];
 
-const reporterName = 'Patrick Pioquinto';
+const reporter = { fullName: 'Patrick Pioquinto', role: 'Field Reporter', barangay: 'Paligui' };
 const reportStatuses = ['Awaiting Review', 'Accepted'];
 const reportDate = new Intl.DateTimeFormat('en-PH', {
   month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
+});
+const fullReportDate = new Intl.DateTimeFormat('en-PH', {
+  dateStyle: 'full', timeStyle: 'short',
 });
 
 const icons = {
@@ -37,41 +43,110 @@ function Icon({ name }) {
 
 const navigation = [['home', 'Home'], ['reports', 'My Reports'], ['submit', 'Submit'], ['profile', 'Profile']];
 
-function Reports({ reports }) {
+function Reports({ reports, onSelect }) {
   return <ul className="reporter-report-list">
-    {reports.map(({ id, location, when, status }) => (
-      <li key={id}>
-        <Icon name="pin" />
-        <div><strong>{location}</strong><small>{when}</small></div>
-        <span className="reporter-status">{status}</span>
+    {reports.map((report) => (
+      <li key={report.id}>
+        <button type="button" onClick={() => onSelect(report)}>
+          <Icon name="pin" />
+          <span><strong>{report.location}</strong><small>{report.when}</small></span>
+          <span className="reporter-status">{report.status}</span>
+        </button>
       </li>
     ))}
   </ul>;
 }
 
-function ReportHistory({ reports, onBack }) {
+function DetailField({ label, children }) {
+  return <div><dt>{label}</dt><dd>{children ?? 'Not recorded'}</dd></div>;
+}
+
+function ReportDetails({ report }) {
+  const [photoUrl, setPhotoUrl] = useState('');
+  const coordinates = Number.isFinite(report.latitude) && Number.isFinite(report.longitude)
+    ? `${report.latitude}, ${report.longitude}` : null;
+  const pending = report.status === 'Awaiting Review';
+  const submitted = report.submittedAt ? fullReportDate.format(report.submittedAt) : report.dateLabel;
+  const yesNo = (value) => value == null ? null : value ? 'Yes' : 'No';
+
+  useEffect(() => {
+    if (!report.photo) return;
+    const url = URL.createObjectURL(report.photo);
+    setPhotoUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [report.photo]);
+
+  return <div className="reporter-detail-content">
+    <section className="reporter-detail-status">
+      <Icon name={pending ? 'waiting' : 'accepted'} />
+      <div><h2>Status: {pending ? 'Pending' : report.status}</h2>
+        {pending && <p>Awaiting MDRRMO review.</p>}
+      </div>
+    </section>
+    <div className="reporter-detail-grid">
+      <section className="reporter-card reporter-detail-card">
+        <h2>Photo Evidence</h2>
+        {photoUrl ? <img className="reporter-detail-photo" src={photoUrl} alt="Submitted flood evidence" />
+          : <p>No photo attached.</p>}
+      </section>
+      <section className="reporter-card reporter-detail-card">
+        <div className="reporter-card-heading">
+          <h2><Icon name="pin" /> Location</h2>
+          {coordinates && <a className="reporter-map-link" target="_blank" rel="noopener noreferrer"
+            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(coordinates)}`}>Open Maps</a>}
+        </div>
+        <dl>
+          <DetailField label="Primary Location">{report.location}</DetailField>
+          <DetailField label="Specific Location / Landmark">{report.landmark || null}</DetailField>
+          <DetailField label="Coordinates">{coordinates && <code>{coordinates}</code>}</DetailField>
+        </dl>
+      </section>
+      <section className="reporter-card reporter-detail-card">
+        <h2>Flood Information</h2>
+        <dl className="reporter-flood-values">
+          <DetailField label="Flood Level">{report.waterLevel}</DetailField>
+          <DetailField label="Water Flow">{report.waterFlow}</DetailField>
+          <DetailField label="Affected Families">{report.estimatedAffectedFamilies}</DetailField>
+          <DetailField label="Description">{report.description}</DetailField>
+        </dl>
+      </section>
+      <section className="reporter-card reporter-detail-card">
+        <h2><Icon name="alert" /> Response Assessment</h2>
+        <dl className="reporter-response-values">
+          <DetailField label="Evacuation Needed">{yesNo(report.evacuationNeeded)}</DetailField>
+          <DetailField label="Accessible by Boat">{yesNo(report.accessibleByRescueBoat)}</DetailField>
+          <DetailField label="Vulnerable Residents">{report.vulnerableResidents}</DetailField>
+        </dl>
+      </section>
+      <section className="reporter-card reporter-detail-card">
+        <h2><Icon name="profile" /> Reporter Information</h2>
+        <dl>
+          <DetailField label="Name">{reporter.fullName}</DetailField>
+          <DetailField label="Barangay">{reporter.barangay}</DetailField>
+          <DetailField label="Registered Mobile Number">{demoPhone}</DetailField>
+        </dl>
+      </section>
+    </div>
+    <footer className="reporter-card reporter-detail-date"><Icon name="calendar" /> Submitted on {submitted}</footer>
+  </div>;
+}
+
+function ReportHistory({ reports, onBack, selected, fromHome, onSelect }) {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
-  const [selected, setSelected] = useState(null);
   const query = search.trim().toLowerCase();
   const visibleReports = reports.filter((report) =>
     (!status || report.status === status) &&
-    `${report.location} ${reporterName}`.toLowerCase().includes(query));
-
-  function openReport(report) {
-    setSelected(report);
-    window.scrollTo(0, 0);
-    window.requestAnimationFrame(() => document.getElementById('report-history-title')?.focus());
-  }
+    `${report.location} ${reporter.fullName}`.toLowerCase().includes(query));
 
   return <section className="reporter-history" aria-labelledby="report-history-title">
     <header className={`reporter-history-header${selected ? '' : ' reporter-history-header-list'}`}>
       <div>
-        <button className="reporter-text-button reporter-history-back" type="button" onClick={() => selected ? openReport(null) : onBack()}>
-          {selected ? '← Back to Report History' : '← Back to Home'}
+        <button className="reporter-text-button reporter-history-back" type="button" onClick={() => selected && !fromHome ? onSelect(null) : onBack()}>
+          {selected && !fromHome ? '← Back to Report History' : '← Back to Home'}
         </button>
-        <h1 id="report-history-title" tabIndex="-1">{selected ? selected.location : 'Report History'}</h1>
-        <p>{selected ? 'Report details' : 'View all your submitted reports'}</p>
+        <h1 id="report-history-title" tabIndex="-1">{selected ? 'Report Details' : 'Report History'}</h1>
+        <p>{selected ? `Report ID: ${selected.id}` : 'View all your submitted reports'}</p>
       </div>
       {!selected && <div className="reporter-history-controls" role="group" aria-label="Filter reports">
         <label className="reporter-history-search">
@@ -89,17 +164,12 @@ function ReportHistory({ reports, onBack }) {
       </div>}
     </header>
     {selected ? (
-      <dl className="reporter-card reporter-history-details">
-        <div><dt>Reporter</dt><dd>{reporterName}</dd></div>
-        <div><dt>Water level</dt><dd>{selected.waterLevel}</dd></div>
-        <div><dt>Submitted</dt><dd>{selected.dateLabel}</dd></div>
-        <div><dt>Status</dt><dd><span className="reporter-status">{selected.status}</span></dd></div>
-      </dl>
+      <ReportDetails key={selected.id} report={selected} />
     ) : (
       <div className="reporter-history-results">
         <ul className="reporter-history-list">
           {visibleReports.map((report) => <li key={report.id}>
-            <button className="reporter-history-row" type="button" onClick={() => openReport(report)}>
+            <button className="reporter-history-row" type="button" onClick={() => onSelect(report)}>
               <span className="reporter-history-location"><Icon name="pin" /><strong>{report.location}</strong></span>
               <span className="reporter-history-level">{report.waterLevel}</span>
               <span className="reporter-history-date">{report.dateLabel}</span>
@@ -116,7 +186,7 @@ function ReportHistory({ reports, onBack }) {
   </section>;
 }
 
-function ReporterHome({ reports, navigate, mobileCapture }) {
+function ReporterHome({ reports, navigate, mobileCapture, onSelectReport }) {
   const stats = [
     ['Total Submitted', reports.length, 'reports'],
     ['Accepted', reports.filter(({ status }) => status === 'Accepted').length, 'accepted'],
@@ -130,9 +200,8 @@ function ReporterHome({ reports, navigate, mobileCapture }) {
   ];
   return <>
     <header className="reporter-heading">
-      <p>Field Reporter · Brgy. Paligui</p>
-      <h1>{reporterName}</h1>
-      <p>Barangay Subordinate</p>
+      <h1>{reporter.fullName}</h1>
+      <p>{reporter.role} · Brgy. {reporter.barangay}</p>
     </header>
     <div className="reporter-home-body">
       <dl className="reporter-stats">
@@ -150,7 +219,7 @@ function ReporterHome({ reports, navigate, mobileCapture }) {
             <button className="reporter-text-button" type="button" onClick={() => navigate('reports')}>View All</button>
           </div>
           <p>Your latest submissions</p>
-          <Reports reports={reports.slice(0, 2)} />
+          <Reports reports={reports.slice(0, 5)} onSelect={onSelectReport} />
         </section>
         <aside className="reporter-hotline">
           <Icon name="alert" />
@@ -172,14 +241,14 @@ function ReporterProfile({ onSignOut }) {
 
   return <section className="reporter-inner reporter-profile" aria-label="Field Reporter profile">
     <header className="reporter-profile-heading">
-      <span className="reporter-profile-avatar" aria-hidden="true">{reporterName[0]}</span>
-      <h1>{reporterName}</h1>
+      <span className="reporter-profile-avatar" aria-hidden="true">{reporter.fullName[0]}</span>
+      <h1>{reporter.fullName}</h1>
     </header>
     <section className="reporter-card reporter-profile-card" aria-labelledby="profile-professional-heading">
       <h2 id="profile-professional-heading">Professional Information</h2>
       <dl className="reporter-profile-fields">
-        <div><Icon name="pin" /><div><dt>Barangay Assignment</dt><dd>Paligui</dd></div></div>
-        <div><Icon name="profile" /><div><dt>Role</dt><dd>Field Reporter</dd></div></div>
+        <div><Icon name="pin" /><div><dt>Barangay Assignment</dt><dd>{reporter.barangay}</dd></div></div>
+        <div><Icon name="profile" /><div><dt>Role</dt><dd>{reporter.role}</dd></div></div>
       </dl>
     </section>
     <section className="reporter-card reporter-profile-card" aria-labelledby="profile-account-heading">
@@ -202,6 +271,7 @@ function ReporterProfile({ onSignOut }) {
 
 export default function ReporterWorkspace({ onSignOut, renderReportForm }) {
   const [screen, setScreen] = useState('home');
+  const [selectedReport, setSelectedReport] = useState(null);
   const [reports, setReports] = useState(examples);
   const [photo, setPhoto] = useState(null);
   const [photoError, setPhotoError] = useState('');
@@ -231,6 +301,7 @@ export default function ReporterWorkspace({ onSignOut, renderReportForm }) {
   }
 
   function navigate(next) {
+    setSelectedReport(null);
     if (next !== screen) {
       setPhoto(null);
       setPhotoError('');
@@ -240,9 +311,17 @@ export default function ReporterWorkspace({ onSignOut, renderReportForm }) {
     if (next === 'submit' && mobileCapture) openPhotoPicker();
   }
 
+  function selectReport(report) {
+    if (screen === 'home') navigate('reports');
+    setSelectedReport(report ? { report, fromHome: screen === 'home' } : null);
+    window.scrollTo(0, 0);
+    window.requestAnimationFrame(() => document.getElementById('report-history-title')?.focus());
+  }
+
   function recordReport(report, confirmation) {
     const submittedAt = Date.now();
     const row = {
+      ...report,
       id: confirmation.id,
       location: report.generalArea,
       when: 'Simulated submission',
@@ -265,11 +344,13 @@ export default function ReporterWorkspace({ onSignOut, renderReportForm }) {
           {id === 'submit' ? mobileCapture ? 'Take Photo' : 'New Report' : label}
         </button>)}
       </nav>
-      <div className="reporter-sidebar-account"><strong>{reporterName}</strong><small>Field Reporter</small></div>
+      <div className="reporter-sidebar-account"><strong>{reporter.fullName}</strong><small>{reporter.role}</small></div>
     </aside>
     <main className={screen === 'reports' ? 'reporter-main reporter-main-history' : 'reporter-main'}>
-      {screen === 'home' && <ReporterHome reports={reports} navigate={navigate} mobileCapture={mobileCapture} />}
-      {screen === 'reports' && <ReportHistory reports={reports} onBack={() => navigate('home')} />}
+      {screen === 'home' && <ReporterHome reports={reports} navigate={navigate} mobileCapture={mobileCapture}
+        onSelectReport={selectReport} />}
+      {screen === 'reports' && <ReportHistory reports={reports} onBack={() => navigate('home')}
+        selected={selectedReport?.report} fromHome={selectedReport?.fromHome} onSelect={selectReport} />}
       {screen === 'submit' && renderReportForm({
         onSubmitted: recordReport, onBack: () => navigate('home'), photo, photoError,
         mobileCapture, onChoosePhoto: openPhotoPicker, onCapturePhoto: choosePhoto,
