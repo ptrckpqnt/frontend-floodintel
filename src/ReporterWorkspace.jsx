@@ -1,16 +1,26 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { demoEmail, demoPhone } from './authService';
 
 const examples = [
-  { id: 'sample-aroma', location: 'Aroma Street', when: 'Sample report', dateLabel: 'Jun 24, 01:23 AM', waterLevel: '75 cm', status: 'Awaiting Review',
+  { id: 'sample-aroma', location: 'Aroma Street', dateLabel: 'Jun 24, 01:23 AM', waterLevel: '75 cm', status: 'Awaiting Review',
     landmark: 'Near irrigation', latitude: 14.945767, longitude: 120.786809, waterFlow: 'Fast',
     estimatedAffectedFamilies: 12, description: 'Water is rising along the street. Residents are requesting evacuation assistance.',
     evacuationNeeded: true, accessibleByRescueBoat: true, vulnerableResidents: 'Present' },
-  { id: 'sample-villena', location: 'Villena Street', when: 'Sample report', dateLabel: 'Jun 23, 10:47 AM', waterLevel: '55 cm', status: 'Awaiting Review' },
+  { id: 'sample-villena', location: 'Villena Street', dateLabel: 'Jun 23, 10:47 AM', waterLevel: '55 cm', status: 'Accepted',
+    landmark: 'Near the covered court', waterFlow: 'Slow', estimatedAffectedFamilies: 6,
+    description: 'Floodwater covers part of the road near the covered court.',
+    evacuationNeeded: false, accessibleByRescueBoat: true, vulnerableResidents: 'None' },
+  { id: 'sample-riverside', location: 'Riverside Road', dateLabel: 'Jun 22, 08:15 AM', waterLevel: '32 cm', status: 'Needs Correction',
+    landmark: 'Near the footbridge', waterFlow: 'Still', estimatedAffectedFamilies: 3,
+    description: 'Standing water covers the path beside the footbridge.',
+    evacuationNeeded: false, accessibleByRescueBoat: false, vulnerableResidents: 'Unknown',
+    reviewNote: 'MDRRMO requested a clearer photo showing the floodwater.' },
 ];
 
-const reporter = { fullName: 'Patrick Pioquinto', role: 'Field Reporter', barangay: 'Paligui' };
-const reportStatuses = ['Awaiting Review', 'Accepted'];
+const reportStatuses = {
+  'Awaiting Review': { tone: 'waiting', icon: 'waiting', explanation: 'Awaiting MDRRMO review.' },
+  Accepted: { tone: 'accepted', icon: 'accepted', explanation: 'MDRRMO has validated this report.' },
+  'Needs Correction': { tone: 'correction', icon: 'alert', explanation: 'MDRRMO has requested a correction.' },
+};
 const reportDate = new Intl.DateTimeFormat('en-PH', {
   month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
 });
@@ -43,14 +53,21 @@ function Icon({ name }) {
 
 const navigation = [['home', 'Home'], ['reports', 'My Reports'], ['submit', 'Submit'], ['profile', 'Profile']];
 
+function ReportStatus({ status }) {
+  return <span className="reporter-status" data-tone={reportStatuses[status]?.tone}>{status}</span>;
+}
+
 function Reports({ reports, onSelect }) {
   return <ul className="reporter-report-list">
     {reports.map((report) => (
       <li key={report.id}>
         <button type="button" onClick={() => onSelect(report)}>
           <Icon name="pin" />
-          <span><strong>{report.location}</strong><small>{report.when}</small></span>
-          <span className="reporter-status">{report.status}</span>
+          <span>
+            <strong>{report.location}</strong>
+            <small>{report.waterLevel} · {report.dateLabel}</small>
+          </span>
+          <ReportStatus status={report.status} />
         </button>
       </li>
     ))}
@@ -61,11 +78,11 @@ function DetailField({ label, children }) {
   return <div><dt>{label}</dt><dd>{children ?? 'Not recorded'}</dd></div>;
 }
 
-function ReportDetails({ report }) {
+function ReportDetails({ report, reporter }) {
   const [photoUrl, setPhotoUrl] = useState('');
   const coordinates = Number.isFinite(report.latitude) && Number.isFinite(report.longitude)
     ? `${report.latitude}, ${report.longitude}` : null;
-  const pending = report.status === 'Awaiting Review';
+  const status = reportStatuses[report.status];
   const submitted = report.submittedAt ? fullReportDate.format(report.submittedAt) : report.dateLabel;
   const yesNo = (value) => value == null ? null : value ? 'Yes' : 'No';
 
@@ -77,10 +94,10 @@ function ReportDetails({ report }) {
   }, [report.photo]);
 
   return <div className="reporter-detail-content">
-    <section className="reporter-detail-status">
-      <Icon name={pending ? 'waiting' : 'accepted'} />
-      <div><h2>Status: {pending ? 'Pending' : report.status}</h2>
-        {pending && <p>Awaiting MDRRMO review.</p>}
+    <section className="reporter-detail-status" data-tone={status?.tone}>
+      {status && <Icon name={status.icon} />}
+      <div><h2>Status: {report.status}</h2>
+        {status && <p>{report.reviewNote || status.explanation}</p>}
       </div>
     </section>
     <div className="reporter-detail-grid">
@@ -123,7 +140,7 @@ function ReportDetails({ report }) {
         <dl>
           <DetailField label="Name">{reporter.fullName}</DetailField>
           <DetailField label="Barangay">{reporter.barangay}</DetailField>
-          <DetailField label="Registered Mobile Number">{demoPhone}</DetailField>
+          <DetailField label="Registered Mobile Number">{reporter.phone}</DetailField>
         </dl>
       </section>
     </div>
@@ -131,7 +148,7 @@ function ReportDetails({ report }) {
   </div>;
 }
 
-function ReportHistory({ reports, onBack, selected, fromHome, onSelect }) {
+function ReportHistory({ reports, onBack, selected, fromHome, onSelect, reporter }) {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const query = search.trim().toLowerCase();
@@ -158,13 +175,13 @@ function ReportHistory({ reports, onBack, selected, fromHome, onSelect }) {
           <Icon name="filter" />
           <select aria-label="Report status" value={status} onChange={(event) => setStatus(event.target.value)}>
             <option value="">All Reports</option>
-            {reportStatuses.map((value) => <option key={value}>{value}</option>)}
+            {Object.keys(reportStatuses).map((value) => <option key={value}>{value}</option>)}
           </select>
         </label>
       </div>}
     </header>
     {selected ? (
-      <ReportDetails key={selected.id} report={selected} />
+      <ReportDetails key={selected.id} report={selected} reporter={reporter} />
     ) : (
       <div className="reporter-history-results">
         <ul className="reporter-history-list">
@@ -173,7 +190,7 @@ function ReportHistory({ reports, onBack, selected, fromHome, onSelect }) {
               <span className="reporter-history-location"><Icon name="pin" /><strong>{report.location}</strong></span>
               <span className="reporter-history-level">{report.waterLevel}</span>
               <span className="reporter-history-date">{report.dateLabel}</span>
-              <span className="reporter-status">{report.status}</span>
+              <ReportStatus status={report.status} />
               <span className="reporter-history-arrow"><Icon name="chevron" /></span>
             </button>
           </li>)}
@@ -186,7 +203,7 @@ function ReportHistory({ reports, onBack, selected, fromHome, onSelect }) {
   </section>;
 }
 
-function ReporterHome({ reports, navigate, mobileCapture, onSelectReport }) {
+function ReporterHome({ reports, navigate, mobileCapture, onSelectReport, reporter }) {
   const stats = [
     ['Total Submitted', reports.length, 'reports'],
     ['Accepted', reports.filter(({ status }) => status === 'Accepted').length, 'accepted'],
@@ -230,7 +247,7 @@ function ReporterHome({ reports, navigate, mobileCapture, onSelectReport }) {
   </>;
 }
 
-function ReporterProfile({ onSignOut }) {
+function ReporterProfile({ onSignOut, reporter }) {
   const confirmation = useRef(null);
   const cancel = useRef(null);
 
@@ -254,8 +271,8 @@ function ReporterProfile({ onSignOut }) {
     <section className="reporter-card reporter-profile-card" aria-labelledby="profile-account-heading">
       <h2 id="profile-account-heading">Account Information</h2>
       <dl className="reporter-profile-fields">
-        <div><Icon name="phone" /><div><dt>Registered Mobile Number</dt><dd>{demoPhone}</dd></div></div>
-        <div><Icon name="mail" /><div><dt>Registered Email</dt><dd>{demoEmail}</dd></div></div>
+        <div><Icon name="phone" /><div><dt>Registered Mobile Number</dt><dd>{reporter.phone}</dd></div></div>
+        <div><Icon name="mail" /><div><dt>Registered Email</dt><dd>{reporter.email}</dd></div></div>
       </dl>
     </section>
     <button className="reporter-profile-logout" type="button" onClick={confirmSignOut}>Log Out</button>
@@ -269,7 +286,7 @@ function ReporterProfile({ onSignOut }) {
   </section>;
 }
 
-export default function ReporterWorkspace({ onSignOut, renderReportForm }) {
+export default function ReporterWorkspace({ onSignOut, renderReportForm, reporter }) {
   const [screen, setScreen] = useState('home');
   const [selectedReport, setSelectedReport] = useState(null);
   const [reports, setReports] = useState(examples);
@@ -324,7 +341,6 @@ export default function ReporterWorkspace({ onSignOut, renderReportForm }) {
       ...report,
       id: confirmation.id,
       location: report.generalArea,
-      when: 'Simulated submission',
       dateLabel: reportDate.format(submittedAt),
       waterLevel: `${report.waterLevelCm} cm`,
       status: 'Awaiting Review',
@@ -348,15 +364,15 @@ export default function ReporterWorkspace({ onSignOut, renderReportForm }) {
     </aside>
     <main className={screen === 'reports' ? 'reporter-main reporter-main-history' : 'reporter-main'}>
       {screen === 'home' && <ReporterHome reports={reports} navigate={navigate} mobileCapture={mobileCapture}
-        onSelectReport={selectReport} />}
+        onSelectReport={selectReport} reporter={reporter} />}
       {screen === 'reports' && <ReportHistory reports={reports} onBack={() => navigate('home')}
-        selected={selectedReport?.report} fromHome={selectedReport?.fromHome} onSelect={selectReport} />}
+        selected={selectedReport?.report} fromHome={selectedReport?.fromHome} onSelect={selectReport} reporter={reporter} />}
       {screen === 'submit' && renderReportForm({
         onSubmitted: recordReport, onBack: () => navigate('home'), photo, photoError,
         mobileCapture, onChoosePhoto: openPhotoPicker, onCapturePhoto: choosePhoto,
         onClearPhoto: () => { setPhoto(null); setPhotoError(''); },
       })}
-      {screen === 'profile' && <ReporterProfile onSignOut={onSignOut} />}
+      {screen === 'profile' && <ReporterProfile onSignOut={onSignOut} reporter={reporter} />}
     </main>
   </div>;
 }

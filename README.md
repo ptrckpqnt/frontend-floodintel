@@ -17,11 +17,11 @@ The React demo opens with the authentication flow from the Figma draft. Signing 
 
 ## Try authentication
 
-1. Sign in with `reporter@example.com` or `09170000000` and the initial password `FloodDemo123`. Close and reopen the app at the same address to check that you stay signed in. Select **Log Out** and reopen again to check that Sign In appears.
+1. Sign in with a sample Field Reporter’s registered email or mobile number and password. Close and reopen the app at the same address to check that you stay signed in. Select **Log Out** and reopen again to check that Sign In appears.
 2. Try empty fields, an incorrect password, and **Simulate a server failure**. Turn the simulation off to retry.
-3. Select **Forgot password?**, enter `reporter@example.com`, and select **Send Reset Link**. Open **Reset Password** in the simulated email shown below the form. Enter matching passwords of at least six characters, update the password, and sign in again with the new password.
+3. Select **Forgot password?**, enter a sample account’s registered email, and select **Send Reset Link**. Open **Reset Password** in the simulated email shown below the form. Enter matching passwords of at least six characters, update the password, and sign in again with the new password.
 
-Authentication and password changes are stored in the browser for the synthetic demo account. Clear this site's data to restore the initial password. Real authentication, email delivery, and account management require the Laravel backend.
+Sample sign-in and password changes are stored in the browser by account. Clear this site's data to restore the initial sample passwords. Real authentication, email delivery, and account management require the Laravel backend.
 
 ## Try the Field Reporter workflow
 

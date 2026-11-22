@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import Authentication from './Authentication';
 import ReporterWorkspace from './ReporterWorkspace';
-import { isSignedIn, signOut } from './authService';
+import { getSignedInReporter, signOut } from './authService';
 import FloodReportForm from './FloodReportForm';
 import './styles.css';
 
@@ -11,12 +11,12 @@ function readResetToken() {
 }
 
 function App() {
-  const [signedIn, setSignedIn] = useState(isSignedIn);
+  const [reporter, setReporter] = useState(getSignedInReporter);
   const [token, setToken] = useState(readResetToken);
   const [entryScreen, setEntryScreen] = useState('signIn');
 
   useEffect(() => {
-    const syncSession = () => setSignedIn(isSignedIn());
+    const syncSession = () => setReporter(getSignedInReporter());
     const syncToken = () => setToken(readResetToken());
     window.addEventListener('storage', syncSession);
     window.addEventListener('hashchange', syncToken);
@@ -32,17 +32,18 @@ function App() {
     url.hash = '';
     window.history.replaceState(null, '', url);
     setEntryScreen(nextScreen);
-    setSignedIn(isSignedIn());
+    setReporter(getSignedInReporter());
     setToken(null);
   }
 
-  return signedIn && token === null ? <ReporterWorkspace renderReportForm={(props) => <FloodReportForm {...props} />} onSignOut={() => {
+  return reporter && token === null ? <ReporterWorkspace key={reporter.email} reporter={reporter}
+    renderReportForm={(props) => <FloodReportForm {...props} />} onSignOut={() => {
     signOut();
-    setSignedIn(false);
+    setReporter(null);
   }} /> : <Authentication key={token ?? 'auth'} token={token} entryScreen={entryScreen}
-    onClearToken={clearToken} onSignedIn={() => {
+    onClearToken={clearToken} onSignedIn={(account) => {
       setEntryScreen('signIn');
-      setSignedIn(true);
+      setReporter(account);
     }} />;
 }
 

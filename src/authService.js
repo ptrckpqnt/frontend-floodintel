@@ -1,17 +1,19 @@
-export const demoEmail = 'reporter@example.com';
-export const demoPhone = '09170000000';
-export const demoPassword = 'FloodDemo123';
+// Client-side fixtures for the demo. Laravel will own production authentication.
+const accounts = [
+  { fullName: 'Mark Jason Patron', email: 'markjasonpatron@gmail.com', phone: '09000000001', initialHash: '332380e74195a60f4df62aef6b1869540492112ab00217322ede4dea1926dbcc' },
+  { fullName: 'Jeremy Ortega', email: 'jeremyortega@gmail.com', phone: '09000000002', initialHash: '464b035251edede494de26c675b39d73ffc5d9e599c8c0d83ded783c1eab979d' },
+  { fullName: 'Aljon Ken Fernandez', email: 'aljonkenfernandez@gmail.com', phone: '09000000003', initialHash: '5e2c3e9e303da226b679cb0b67fa008055654c3121a5cdd0810c7e3c5aa3edd4' },
+];
 
-const sessionKey = 'floodintel.demo.session';
-const passwordKey = 'floodintel.demo.password';
-const resetKey = 'floodintel.demo.reset';
+const sessionKey = 'floodintel.demo.reporter.session';
+const passwordKey = (email) => `floodintel.demo.password.${email}`;
+const resetKey = (email) => `floodintel.demo.reset.${email}`;
 
-export function isSignedIn() {
-  return localStorage.getItem(sessionKey) === demoEmail;
-}
-
-export function hasUpdatedPassword() {
-  return localStorage.getItem(passwordKey) !== null;
+export function getSignedInReporter() {
+  const email = localStorage.getItem(sessionKey);
+  const account = accounts.find((candidate) => candidate.email === email);
+  if (!account) return null;
+  return { fullName: account.fullName, email, phone: account.phone, role: 'Field Reporter', barangay: 'Paligui' };
 }
 
 export function signOut() {
@@ -32,40 +34,49 @@ async function checkConnection(simulateFailure) {
 
 export async function signIn(identifier, password, simulateFailure) {
   await checkConnection(simulateFailure);
-  const account = identifier.trim().toLowerCase();
-  const expected = localStorage.getItem(passwordKey) ?? await digest(demoPassword);
-  if (![demoEmail, demoPhone].includes(account) || await digest(password) !== expected) {
+  const login = identifier.trim().toLowerCase();
+  const account = accounts.find(({ email, phone }) => email === login || phone === login);
+  if (!account || await digest(password) !== (localStorage.getItem(passwordKey(account.email)) ?? account.initialHash)) {
     throw new Error('The phone number, email address, or password is incorrect.');
   }
-  localStorage.setItem(sessionKey, demoEmail);
+  localStorage.setItem(sessionKey, account.email);
+  return getSignedInReporter();
 }
 
 export async function requestPasswordReset(email, simulateFailure) {
   await checkConnection(simulateFailure);
-  // Stand-in for the email delivery step, available only for the synthetic account.
-  if (email.trim().toLowerCase() !== demoEmail) return null;
+  const address = email.trim().toLowerCase();
+  if (!accounts.some((account) => account.email === address)) return null;
   const token = crypto.randomUUID();
-  localStorage.setItem(resetKey, JSON.stringify({ token, expires: Date.now() + 30 * 60 * 1000 }));
+  localStorage.setItem(resetKey(address), JSON.stringify({ token, expires: Date.now() + 30 * 60 * 1000 }));
   const url = new URL(window.location.href);
   url.hash = 'reset=' + token;
   return url.href;
 }
 
+function findResetAccount(token) {
+  if (!token) return undefined;
+  return accounts.find(({ email }) => {
+    try {
+      const reset = JSON.parse(localStorage.getItem(resetKey(email)));
+      return reset?.token === token && reset.expires > Date.now();
+    } catch {
+      return false;
+    }
+  });
+}
+
 export function canResetPassword(token) {
-  try {
-    const reset = JSON.parse(localStorage.getItem(resetKey));
-    return Boolean(token && reset?.token === token && reset.expires > Date.now());
-  } catch {
-    return false;
-  }
+  return Boolean(findResetAccount(token));
 }
 
 export async function updatePassword(token, password, simulateFailure) {
   await checkConnection(simulateFailure);
   if (password.length < 6) throw new Error('Enter at least 6 characters.');
   const hash = await digest(password);
-  if (!canResetPassword(token)) throw new Error('This reset link is invalid or expired. Request a new link.');
-  localStorage.removeItem(resetKey);
-  localStorage.setItem(passwordKey, hash);
-  signOut();
+  const account = findResetAccount(token);
+  if (!account) throw new Error('This reset link is invalid or expired. Request a new link.');
+  localStorage.setItem(passwordKey(account.email), hash);
+  localStorage.removeItem(resetKey(account.email));
+  if (localStorage.getItem(sessionKey) === account.email) signOut();
 }
