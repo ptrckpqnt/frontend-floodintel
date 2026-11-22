@@ -500,6 +500,9 @@ fieldset + .summary { margin-top: 14px; }
   background: #f6f7f9;
 }
 .flood-report form :is(input, select, textarea, button, [tabindex]) { scroll-margin-top: 100px; }
+.flood-required-note { margin: 0 0 12px; color: #536479; font-size: .85rem; }
+.flood-report-card button[aria-invalid="true"] { outline: 2px solid #a32b25; outline-offset: 2px; }
+.flood-report-card button[aria-invalid="true"]:focus-visible { outline: 3px solid #1d8477; outline-offset: 3px; }
 .flood-report-header button { padding: 4px 0; font-size: 1.25rem; }
 .flood-report-header h1 { margin: 0 0 4px; font-size: clamp(1.3rem, 4vw, 1.8rem); }
 .flood-report-header p { margin: 0; color: #536479; font-size: .88rem; }

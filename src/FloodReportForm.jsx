@@ -34,7 +34,6 @@ export default function FloodReportForm({ onSubmitted, onViewReport, onBack, pho
   const [confirmation, setConfirmation] = useState(null);
   const [simulateFailure, setSimulateFailure] = useState(false);
   const pendingReport = useRef(null);
-  const summary = useRef(null);
 
   useEffect(() => {
     if (!photo) {
@@ -77,6 +76,7 @@ export default function FloodReportForm({ onSubmitted, onViewReport, onBack, pho
   async function submit(event) {
     event.preventDefault();
     if (sending || locating) return;
+    const form = event.currentTarget;
     const depth = Number(fields.waterLevel);
     const families = fields.families === '' ? null : Number(fields.families);
     const nextErrors = {};
@@ -87,7 +87,7 @@ export default function FloodReportForm({ onSubmitted, onViewReport, onBack, pho
       nextErrors.waterLevel = 'Enter a non-negative depth in centimeters.';
     }
     if (!fields.waterFlow) nextErrors.waterFlow = 'Select the water flow.';
-    if (event.currentTarget.elements.families.validity.badInput ||
+    if (form.elements.families.validity.badInput ||
         (families !== null && (!Number.isSafeInteger(families) || families < 0))) {
       nextErrors.families = 'Enter a whole number of families, zero or higher.';
     }
@@ -95,7 +95,11 @@ export default function FloodReportForm({ onSubmitted, onViewReport, onBack, pho
     setErrors(nextErrors);
     setFailure('');
     if (Object.keys(nextErrors).length) {
-      requestAnimationFrame(() => summary.current?.focus());
+      requestAnimationFrame(() => {
+        const firstInvalid = form.querySelector('[aria-invalid="true"]');
+        firstInvalid?.focus({ preventScroll: true });
+        firstInvalid?.scrollIntoView({ block: 'center' });
+      });
       return;
     }
 
@@ -148,6 +152,8 @@ export default function FloodReportForm({ onSubmitted, onViewReport, onBack, pho
   }
 
   const needsFirstPhoto = mobileCapture && !photo;
+  const photoMessage = photoError || (!photo && errors.photo);
+  const locationMessage = locationError || errors.location;
 
   return <section className="reporter-inner flood-report">
     <header className="flood-report-header">
@@ -168,36 +174,43 @@ export default function FloodReportForm({ onSubmitted, onViewReport, onBack, pho
       </section>
     ) : needsFirstPhoto ? (
       <section className="reporter-card flood-report-card" aria-labelledby="report-first-photo">
-        <h2 id="report-first-photo">Photo Evidence</h2>
+        <h2 id="report-first-photo">Photo Evidence *</h2>
         <p>If the camera didn’t open, check camera permissions in your phone’s settings, then try again.</p>
         {photoError && <p className="error" role="alert">{photoError}</p>}
         <button className="reporter-primary" type="button" onClick={onChoosePhoto}>Try camera again</button>
       </section>
     ) : (
       <form noValidate onSubmit={submit}>
-        {Object.values(errors).some(Boolean) && (
-          <p className="error summary" role="alert" tabIndex="-1" ref={summary}>Check the highlighted fields and try again.</p>
+        <p className="flood-required-note">Fields marked with * are required.</p>
+        {Object.entries(errors).some(([name, message]) => message && (name !== 'photo' || !photo)) && (
+          <p className="error summary" role="alert">Check the highlighted fields and try again.</p>
         )}
         <fieldset className="flood-report-fields" disabled={sending}>
-          <div className="flood-report-photo">
-            {preview && <img src={preview} alt="Flood evidence preview" />}
-            <button className={preview ? 'flood-photo-replace' : 'reporter-primary'} type="button"
-              onClick={onChoosePhoto}>
-              {mobileCapture ? 'Retake photo' : (preview ? 'Replace photo' : 'Upload photo')}
-            </button>
-            {(photoError || (!photo && errors.photo)) && <p className="error" role="alert">{photoError || errors.photo}</p>}
-          </div>
+          <section className="reporter-card flood-report-card" aria-labelledby="report-photo">
+            <h2 id="report-photo">Photo Evidence *</h2>
+            <div className="flood-report-photo">
+              {preview && <img src={preview} alt="Flood evidence preview" />}
+              <button className={preview ? 'flood-photo-replace' : 'reporter-primary'} type="button"
+                onClick={onChoosePhoto} aria-invalid={Boolean(!photo && photoMessage)}
+                aria-describedby={photoMessage ? 'report-photo-error' : undefined}>
+                {mobileCapture ? 'Retake photo' : (preview ? 'Replace photo' : 'Upload photo')}
+              </button>
+            </div>
+            {photoMessage && <p className="error" id="report-photo-error" role="alert">{photoMessage}</p>}
+          </section>
           <section className="reporter-card flood-report-card" aria-labelledby="report-location">
             <h2 id="report-location">Location</h2>
             {field('generalArea', 'General Area', { required: true, placeholder: 'e.g., Northville 10, Block 5' })}
             {field('landmark', 'Landmark / Street', { placeholder: 'e.g., Near the basketball court' })}
             <div>
               <p className="field-label">GPS coordinates *</p>
-              <button className="secondary" type="button" onClick={captureLocation} disabled={locating}>
+              <button className="secondary" type="button" onClick={captureLocation} disabled={locating}
+                aria-invalid={Boolean(!location && locationMessage)}
+                aria-describedby={locationMessage ? 'report-location-error' : undefined}>
                 {locating ? 'Getting location…' : location ? 'Update location' : 'Capture location'}
               </button>
               {location && <p aria-live="polite">{location.latitude.toFixed(5)}, {location.longitude.toFixed(5)}</p>}
-              {(locationError || errors.location) && <p className="error" role="alert">{locationError || errors.location}</p>}
+              {locationMessage && <p className="error" id="report-location-error" role="alert">{locationMessage}</p>}
             </div>
           </section>
           <section className="reporter-card flood-report-card" aria-labelledby="report-flood-details">
