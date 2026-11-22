@@ -378,6 +378,70 @@ fieldset + .summary { margin-top: 14px; }
 .reporter-history-details dt { color: #536479; font-size: .85rem; }
 .reporter-history-details dd { margin: 2px 0 0; }
 
+.reporter-inner.flood-report { padding-top: 0; }
+.flood-report-header {
+  position: sticky;
+  z-index: 1;
+  top: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--reporter-border);
+  background: #f6f7f9;
+}
+.flood-report form :is(input, select, textarea, button, [tabindex]) { scroll-margin-top: 100px; }
+.flood-report-header button { padding: 4px 0; font-size: 1.25rem; }
+.flood-report-header h1 { margin: 0 0 4px; font-size: clamp(1.3rem, 4vw, 1.8rem); }
+.flood-report-header p { margin: 0; color: #536479; font-size: .88rem; }
+.flood-report-fields { gap: 12px; }
+.flood-report-photo { position: relative; }
+.flood-camera { display: grid; gap: 10px; }
+.flood-camera video { width: 100%; max-height: 54dvh; border-radius: 12px; background: #101827; }
+.flood-camera p { margin: 0; }
+.flood-camera-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.flood-camera-actions .reporter-primary { width: auto; flex: 1; }
+.flood-report-photo img {
+  display: block;
+  width: 100%;
+  max-height: 340px;
+  aspect-ratio: 16 / 9;
+  object-fit: contain;
+  border-radius: 12px;
+  background: #e5eaf0;
+}
+.flood-photo-replace {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 7px 10px;
+  background: #101827d9;
+  font-size: .8rem;
+}
+.flood-report-card { display: grid; gap: 12px; }
+.flood-report-card h2 { margin-bottom: 4px; }
+.flood-report-card label, .flood-report-card .field-label { color: #101827; font-size: .85rem; }
+.flood-report-card input:not([type="checkbox"]), .flood-report-card select, .flood-report-card textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: #f0f1f4;
+  color: inherit;
+  font: inherit;
+}
+.flood-report-card [aria-invalid="true"]:is(input, select, textarea) { border-color: #a32b25; }
+.flood-report-card textarea { display: block; resize: vertical; }
+.flood-report-card .error { margin: 5px 0 0; color: #96251e; }
+.flood-report-card small { color: #536479; }
+.flood-report .submit { margin-top: 12px; }
+@media (width < 900px) {
+  .reporter-workspace-submitting .reporter-sidebar { display: none; }
+  .reporter-workspace-submitting .reporter-main { padding-bottom: env(safe-area-inset-bottom); }
+  .flood-report-header { margin-inline: -16px; padding-inline: 16px; background: white; }
+}
+
 @media (min-width: 900px) {
   .reporter-workspace { display: grid; grid-template-columns: 220px minmax(0, 1fr); }
   .reporter-sidebar { position: sticky; inset: 0 auto auto; display: flex; flex-direction: column; height: 100dvh; padding: 0 11px; border-top: 0; border-right: 1px solid var(--reporter-border); }
