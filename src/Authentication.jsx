@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
-  canResetPassword, demoEmail, demoPassword, demoPhone, hasUpdatedPassword, requestPasswordReset, signIn, updatePassword,
+  canResetPassword, requestPasswordReset, signIn, updatePassword,
 } from './authService';
 
 const screens = {
@@ -69,8 +69,7 @@ export default function Authentication({ token, entryScreen, onSignedIn, onClear
     setBusy(true);
     try {
       if (screen === 'signIn') {
-        await signIn(identifier, password, simulateFailure);
-        onSignedIn();
+        onSignedIn(await signIn(identifier, password, simulateFailure));
       } else if (screen === 'forgot') {
         setRequested(false);
         setResetLink(null);
@@ -153,7 +152,7 @@ export default function Authentication({ token, entryScreen, onSignedIn, onClear
                   )}
                   {screen === 'forgot' && (
                     <Input name="email" label="Email Address" type="email" autoComplete="email"
-                      placeholder={demoEmail} error={errors.email} />
+                      placeholder="Enter your registered email" error={errors.email} />
                   )}
                   {screen === 'reset' && (
                     <>
@@ -175,22 +174,9 @@ export default function Authentication({ token, entryScreen, onSignedIn, onClear
                 <a href={resetLink}>Reset Password</a>
               </aside>
             )}
-            {screen === 'signIn' && (
-              <aside className="auth-note auth-credentials">
-                <strong>Demo role access</strong>
-                <dl>
-                  <dt>Field Reporter</dt>
-                  <dd>{demoEmail}<br />{demoPhone}<br />
-                    {hasUpdatedPassword() ? 'Use the password you set.' : <>Password: <code>{demoPassword}</code></>}
-                  </dd>
-                </dl>
-              </aside>
-            )}
             {screen === 'signIn' && <p className="auth-note">Need an account? Field Reporters should contact their BDRRMO. BDRRMO users should contact their MDRRMO.</p>}
           </section>
           <aside className="auth-demo" aria-label="Demo controls">
-            {screen === 'signIn' && <p className="auth-mobile-credentials">Demo account · {demoEmail} or {demoPhone}<br />
-              {hasUpdatedPassword() ? 'Use the password you set.' : <>Initial password · <code>{demoPassword}</code></>}</p>}
             {screens[screen] && !invalidLink && (
               <label className="toggle">
                 <input type="checkbox" checked={simulateFailure} disabled={busy}

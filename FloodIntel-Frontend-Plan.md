@@ -7,7 +7,7 @@
 - Sign in with a phone number or email address and password. Keep the session across app closes and reopens. Log Out ends the session.
 - Use **Send Reset Link** to request an email with a **Reset Password** button. The button opens the new-password form. After updating the password, return to Sign In.
 - BDRRMO creates and manages Field Reporter accounts. MDRRMO creates and manages BDRRMO accounts.
-- The demo uses one synthetic Field Reporter account and a simulated reset email. Confirm real session behavior, role routing, and email delivery during Laravel integration.
+- The demo uses sample Field Reporter accounts and a simulated reset email. Confirm real session behavior, role routing, and email delivery during Laravel integration.
 
 ## Goal
 
