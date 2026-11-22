@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import ReportCamera from './ReportCamera';
 import { submitFloodReport } from './reportService';
 
 const initialFields = {
@@ -23,9 +22,8 @@ function ReportField({ name, label, required, value, error, onChange, options, m
 
 const yesNo = [['No', 'No'], ['Yes', 'Yes']];
 
-export default function FloodReportForm({ onSubmitted, onViewReport, onBack, photo, photoError, mobileCapture, onChoosePhoto, onCapturePhoto, onClearPhoto }) {
+export default function FloodReportForm({ onSubmitted, onViewReport, onBack, photo, photoError, mobileCapture, onChoosePhoto, onClearPhoto }) {
   const [fields, setFields] = useState(initialFields);
-  const [cameraOpen, setCameraOpen] = useState(false);
   const [preview, setPreview] = useState('');
   const [location, setLocation] = useState(null);
   const [locating, setLocating] = useState(false);
@@ -78,7 +76,7 @@ export default function FloodReportForm({ onSubmitted, onViewReport, onBack, pho
 
   async function submit(event) {
     event.preventDefault();
-    if (sending || locating || cameraOpen) return;
+    if (sending || locating) return;
     const depth = Number(fields.waterLevel);
     const families = fields.families === '' ? null : Number(fields.families);
     const nextErrors = {};
@@ -149,12 +147,14 @@ export default function FloodReportForm({ onSubmitted, onViewReport, onBack, pho
       onChange={updateField} {...props} />;
   }
 
+  const needsFirstPhoto = mobileCapture && !photo;
+
   return <section className="reporter-inner flood-report">
     <header className="flood-report-header">
       <button className="reporter-text-button" type="button" aria-label="Back to Home" onClick={onBack}>←</button>
       <div>
         <h1>Submit Flood Report</h1>
-        <p>{photo ? 'Photo attached — fill in the details' : 'Add a photo and describe the flooding'}</p>
+        <p>{needsFirstPhoto ? 'Take a photo to continue' : photo ? 'Photo attached — fill in the details' : 'Add a photo and describe the flooding'}</p>
       </div>
     </header>
     {confirmation ? (
@@ -166,28 +166,27 @@ export default function FloodReportForm({ onSubmitted, onViewReport, onBack, pho
           <button className="secondary" type="button" onClick={startAnother}>Create another report</button>
         </div>
       </section>
+    ) : needsFirstPhoto ? (
+      <section className="reporter-card flood-report-card" aria-labelledby="report-first-photo">
+        <h2 id="report-first-photo">Photo Evidence</h2>
+        <p>If the camera didn’t open, check camera permissions in your phone’s settings, then try again.</p>
+        {photoError && <p className="error" role="alert">{photoError}</p>}
+        <button className="reporter-primary" type="button" onClick={onChoosePhoto}>Try camera again</button>
+      </section>
     ) : (
       <form noValidate onSubmit={submit}>
         {Object.values(errors).some(Boolean) && (
           <p className="error summary" role="alert" tabIndex="-1" ref={summary}>Check the highlighted fields and try again.</p>
         )}
         <fieldset className="flood-report-fields" disabled={sending}>
-          {cameraOpen ? (
-            <ReportCamera onCapture={(file) => {
-              onCapturePhoto(file);
-              setCameraOpen(false);
-            }} onClose={() => setCameraOpen(false)} onChoosePhoto={() => onChoosePhoto(false)} />
-          ) : <div className="flood-report-photo">
+          <div className="flood-report-photo">
             {preview && <img src={preview} alt="Flood evidence preview" />}
             <button className={preview ? 'flood-photo-replace' : 'reporter-primary'} type="button"
-              onClick={() => onChoosePhoto()}>
-              {mobileCapture ? (preview ? 'Retake photo' : 'Open camera') : (preview ? 'Replace photo' : 'Upload photo')}
+              onClick={onChoosePhoto}>
+              {mobileCapture ? 'Retake photo' : (preview ? 'Replace photo' : 'Upload photo')}
             </button>
-            {mobileCapture && <button className="reporter-text-button" type="button" onClick={() => setCameraOpen(true)}>
-              Use in-app camera
-            </button>}
             {(photoError || (!photo && errors.photo)) && <p className="error" role="alert">{photoError || errors.photo}</p>}
-          </div>}
+          </div>
           <section className="reporter-card flood-report-card" aria-labelledby="report-location">
             <h2 id="report-location">Location</h2>
             {field('generalArea', 'General Area', { required: true, placeholder: 'e.g., Northville 10, Block 5' })}
@@ -219,7 +218,7 @@ export default function FloodReportForm({ onSubmitted, onViewReport, onBack, pho
             onChange={(event) => setSimulateFailure(event.target.checked)} /> Simulate a server failure</label>
         </fieldset>
         {failure && <p className="error summary" role="alert">{failure} Turn off the demo failure option and retry.</p>}
-        <button className="reporter-primary submit" type="submit" disabled={sending || locating || cameraOpen}>
+        <button className="reporter-primary submit" type="submit" disabled={sending || locating}>
           {sending ? 'Submitting…' : failure ? 'Retry submission' : 'Submit'}
         </button>
       </form>

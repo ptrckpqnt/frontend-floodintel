@@ -505,11 +505,6 @@ fieldset + .summary { margin-top: 14px; }
 .flood-report-header p { margin: 0; color: #536479; font-size: .88rem; }
 .flood-report-fields { gap: 12px; }
 .flood-report-photo { position: relative; }
-.flood-camera { display: grid; gap: 10px; }
-.flood-camera video { width: 100%; max-height: 54dvh; border-radius: 12px; background: #101827; }
-.flood-camera p { margin: 0; }
-.flood-camera-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-.flood-camera-actions .reporter-primary { width: auto; flex: 1; }
 .flood-report-photo img {
   display: block;
   width: 100%;

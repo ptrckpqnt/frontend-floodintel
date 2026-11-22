@@ -299,10 +299,8 @@ export default function ReporterWorkspace({ onSignOut, renderReportForm, reporte
     (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1)
   );
 
-  function openPhotoPicker(capture = mobileCapture) {
+  function openPhotoPicker() {
     const input = photoPicker.current;
-    if (capture) input.setAttribute('capture', 'environment');
-    else input.removeAttribute('capture');
     input.value = '';
     input.click();
   }
@@ -350,7 +348,8 @@ export default function ReporterWorkspace({ onSignOut, renderReportForm, reporte
   }
 
   return <div className={screen === 'submit' ? 'reporter-workspace reporter-workspace-submitting' : 'reporter-workspace'}>
-    <input ref={photoPicker} type="file" accept="image/*" hidden onChange={(event) => choosePhoto(event.target.files[0])} />
+    <input ref={photoPicker} type="file" accept="image/*" capture={mobileCapture ? 'environment' : undefined}
+      hidden onChange={(event) => choosePhoto(event.target.files[0])} />
     <aside className="reporter-sidebar">
       <div className="reporter-brand"><span aria-hidden="true">F</span>FloodIntel</div>
       <nav className="reporter-nav" aria-label="Field Reporter">
@@ -370,7 +369,7 @@ export default function ReporterWorkspace({ onSignOut, renderReportForm, reporte
       {screen === 'submit' && renderReportForm({
         onSubmitted: recordReport, onBack: () => navigate('home'), photo, photoError,
         onViewReport: (id) => selectReport(reports.find((report) => report.id === id)),
-        mobileCapture, onChoosePhoto: openPhotoPicker, onCapturePhoto: choosePhoto,
+        mobileCapture, onChoosePhoto: openPhotoPicker,
         onClearPhoto: () => { setPhoto(null); setPhotoError(''); },
       })}
       {screen === 'profile' && <ReporterProfile onSignOut={onSignOut} reporter={reporter} />}
