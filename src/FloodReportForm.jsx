@@ -23,7 +23,7 @@ function ReportField({ name, label, required, value, error, onChange, options, m
 
 const yesNo = [['No', 'No'], ['Yes', 'Yes']];
 
-export default function FloodReportForm({ onSubmitted, onBack, photo, photoError, mobileCapture, onChoosePhoto, onCapturePhoto, onClearPhoto }) {
+export default function FloodReportForm({ onSubmitted, onViewReport, onBack, photo, photoError, mobileCapture, onChoosePhoto, onCapturePhoto, onClearPhoto }) {
   const [fields, setFields] = useState(initialFields);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [preview, setPreview] = useState('');
@@ -161,7 +161,10 @@ export default function FloodReportForm({ onSubmitted, onBack, photo, photoError
       <section className="reporter-card confirmation" aria-live="polite">
         <h2>Demo report submitted</h2>
         <p>This confirmation is simulated.</p>
-        <button className="reporter-primary" type="button" onClick={startAnother}>Create another report</button>
+        <div className="flood-confirmation-actions">
+          <button className="reporter-primary" type="button" onClick={() => onViewReport(confirmation.id)}>View report</button>
+          <button className="secondary" type="button" onClick={startAnother}>Create another report</button>
+        </div>
       </section>
     ) : (
       <form noValidate onSubmit={submit}>

@@ -544,6 +544,7 @@ fieldset + .summary { margin-top: 14px; }
 .flood-report-card .error { margin: 5px 0 0; color: #96251e; }
 .flood-report-card small { color: #536479; }
 .flood-report .submit { margin-top: 12px; }
+.flood-confirmation-actions { display: grid; gap: 8px; }
 @media (width < 900px) {
   .reporter-workspace-submitting .reporter-sidebar { display: none; }
   .reporter-workspace-submitting .reporter-main { padding-bottom: env(safe-area-inset-bottom); }

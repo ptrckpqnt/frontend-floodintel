@@ -329,7 +329,7 @@ export default function ReporterWorkspace({ onSignOut, renderReportForm, reporte
   }
 
   function selectReport(report) {
-    if (screen === 'home') navigate('reports');
+    if (screen !== 'reports') navigate('reports');
     setSelectedReport(report ? { report, fromHome: screen === 'home' } : null);
     window.scrollTo(0, 0);
     window.requestAnimationFrame(() => document.getElementById('report-history-title')?.focus());
@@ -369,6 +369,7 @@ export default function ReporterWorkspace({ onSignOut, renderReportForm, reporte
         selected={selectedReport?.report} fromHome={selectedReport?.fromHome} onSelect={selectReport} reporter={reporter} />}
       {screen === 'submit' && renderReportForm({
         onSubmitted: recordReport, onBack: () => navigate('home'), photo, photoError,
+        onViewReport: (id) => selectReport(reports.find((report) => report.id === id)),
         mobileCapture, onChoosePhoto: openPhotoPicker, onCapturePhoto: choosePhoto,
         onClearPhoto: () => { setPhoto(null); setPhotoError(''); },
       })}
