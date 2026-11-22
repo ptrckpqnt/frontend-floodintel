@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import { demoEmail, demoPhone } from './authService';
 
 const examples = [
   { id: 'sample-aroma', location: 'Aroma Street', when: 'Sample report', dateLabel: 'Jun 24, 01:23 AM', waterLevel: 'Waist-deep (50–100 cm)', status: 'Awaiting Review' },
@@ -17,6 +18,8 @@ const icons = {
   submit: 'M12 8v8 M8 12h8 M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0',
   camera: 'M21 14v5H3V8h4l2-3h6l2 3h1 M15 13a3 3 0 1 1-6 0 3 3 0 0 1 6 0 M21 3v8 M17 7h8',
   profile: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0',
+  phone: 'M4 4h4l2 5-2 2a13 13 0 0 0 5 5l2-2 5 2v4C12 22 2 12 4 4Z',
+  mail: 'M3 5h18v14H3z M3 6l9 7 9-7',
   accepted: 'm3 17 6-6 4 4 8-8 M15 7h6v6',
   waiting: 'M12 6v6l4 2 M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0',
   calendar: 'M4 5h16v16H4z M4 10h16 M8 3v4 M16 3v4',
@@ -158,6 +161,45 @@ function ReporterHome({ reports, navigate, mobileCapture }) {
   </>;
 }
 
+function ReporterProfile({ onSignOut }) {
+  const confirmation = useRef(null);
+  const cancel = useRef(null);
+
+  function confirmSignOut() {
+    confirmation.current.showModal();
+    cancel.current.focus();
+  }
+
+  return <section className="reporter-inner reporter-profile" aria-label="Field Reporter profile">
+    <header className="reporter-profile-heading">
+      <span className="reporter-profile-avatar" aria-hidden="true">{reporterName[0]}</span>
+      <h1>{reporterName}</h1>
+    </header>
+    <section className="reporter-card reporter-profile-card" aria-labelledby="profile-professional-heading">
+      <h2 id="profile-professional-heading">Professional Information</h2>
+      <dl className="reporter-profile-fields">
+        <div><Icon name="pin" /><div><dt>Barangay Assignment</dt><dd>Paligui</dd></div></div>
+        <div><Icon name="profile" /><div><dt>Role</dt><dd>Field Reporter</dd></div></div>
+      </dl>
+    </section>
+    <section className="reporter-card reporter-profile-card" aria-labelledby="profile-account-heading">
+      <h2 id="profile-account-heading">Account Information</h2>
+      <dl className="reporter-profile-fields">
+        <div><Icon name="phone" /><div><dt>Registered Mobile Number</dt><dd>{demoPhone}</dd></div></div>
+        <div><Icon name="mail" /><div><dt>Registered Email</dt><dd>{demoEmail}</dd></div></div>
+      </dl>
+    </section>
+    <button className="reporter-profile-logout" type="button" onClick={confirmSignOut}>Log Out</button>
+    <dialog ref={confirmation} className="reporter-logout-dialog"
+      aria-labelledby="reporter-logout-title" aria-describedby="reporter-logout-description">
+      <h2 id="reporter-logout-title">Are you sure you want to sign out?</h2>
+      <p id="reporter-logout-description">You will need to sign in again to submit or view flood reports.</p>
+      <button type="button" className="reporter-profile-logout" onClick={onSignOut}>Sign Out</button>
+      <button ref={cancel} className="reporter-logout-cancel" type="button" onClick={() => confirmation.current.close()}>Cancel</button>
+    </dialog>
+  </section>;
+}
+
 export default function ReporterWorkspace({ onSignOut, renderReportForm }) {
   const [screen, setScreen] = useState('home');
   const [reports, setReports] = useState(examples);
@@ -233,13 +275,7 @@ export default function ReporterWorkspace({ onSignOut, renderReportForm }) {
         mobileCapture, onChoosePhoto: openPhotoPicker, onCapturePhoto: choosePhoto,
         onClearPhoto: () => { setPhoto(null); setPhotoError(''); },
       })}
-      {screen === 'profile' && <section className="reporter-inner">
-        <h1>Profile</h1>
-        <div className="reporter-card">
-          <h2>{reporterName}</h2><p>Field Reporter · Brgy. Paligui</p>
-          <button type="button" className="reporter-primary" onClick={onSignOut}>Log Out</button>
-        </div>
-      </section>}
+      {screen === 'profile' && <ReporterProfile onSignOut={onSignOut} />}
     </main>
   </div>;
 }
