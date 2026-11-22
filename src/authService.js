@@ -8,12 +8,38 @@ const accounts = [
 const sessionKey = 'floodintel.demo.reporter.session';
 const passwordKey = (email) => `floodintel.demo.password.${email}`;
 const resetKey = (email) => `floodintel.demo.reset.${email}`;
+const profileKey = (id) => `floodintel.demo.profile.${id}`;
+
+function readAccount(account) {
+  const id = account.email;
+  let saved;
+  try {
+    saved = JSON.parse(localStorage.getItem(profileKey(id)));
+  } catch {
+    saved = null;
+  }
+  return {
+    id,
+    fullName: saved?.fullName ?? account.fullName,
+    email: saved?.email ?? account.email,
+    phone: saved?.phone ?? account.phone,
+    passwordHash: saved?.passwordHash ?? localStorage.getItem(passwordKey(id)) ?? account.initialHash,
+  };
+}
+
+function reporterProfile({ id, fullName, email, phone }) {
+  return { id, fullName, email, phone, role: 'Field Reporter', barangay: 'Paligui' };
+}
+
+function normalizePhone(phone) {
+  return phone.trim().replace(/^\+63(?=9)/, '0');
+}
 
 export function getSignedInReporter() {
-  const email = localStorage.getItem(sessionKey);
-  const account = accounts.find((candidate) => candidate.email === email);
+  const id = localStorage.getItem(sessionKey);
+  const account = accounts.find((candidate) => candidate.email === id);
   if (!account) return null;
-  return { fullName: account.fullName, email, phone: account.phone, role: 'Field Reporter', barangay: 'Paligui' };
+  return reporterProfile(readAccount(account));
 }
 
 export function signOut() {
@@ -34,21 +60,55 @@ async function checkConnection(simulateFailure) {
 
 export async function signIn(identifier, password, simulateFailure) {
   await checkConnection(simulateFailure);
-  const login = identifier.trim().toLowerCase();
-  const account = accounts.find(({ email, phone }) => email === login || phone === login);
-  if (!account || await digest(password) !== (localStorage.getItem(passwordKey(account.email)) ?? account.initialHash)) {
+  const login = normalizePhone(identifier).toLowerCase();
+  const hash = await digest(password);
+  const account = accounts.map(readAccount).find(({ email, phone }) => email === login || phone === login);
+  if (!account || hash !== account.passwordHash) {
     throw new Error('The phone number, email address, or password is incorrect.');
   }
-  localStorage.setItem(sessionKey, account.email);
-  return getSignedInReporter();
+  localStorage.setItem(sessionKey, account.id);
+  return reporterProfile(account);
+}
+
+export async function updateReporterProfile(id, { fullName, email, phone, currentPassword, newPassword, confirmPassword }) {
+  const fixture = accounts.find((account) => account.email === id);
+  if (!fixture || localStorage.getItem(sessionKey) !== id) throw new Error('Sign in again to edit your profile.');
+  const name = fullName.trim();
+  const address = email.trim().toLowerCase();
+  const number = normalizePhone(phone);
+  if (!name) throw new Error('Enter your full name.');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address)) throw new Error('Enter a valid email address.');
+  if (!/^09\d{9}$/.test(number)) throw new Error('Enter a Philippine mobile number, such as 09123456789.');
+
+  let previousHash;
+  let newHash;
+  if (currentPassword || newPassword || confirmPassword) {
+    if (!currentPassword) throw new Error('Enter your current password.');
+    if (newPassword.length < 6) throw new Error('Enter at least 6 characters for the new password.');
+    if (newPassword !== confirmPassword) throw new Error('The new passwords do not match.');
+    [previousHash, newHash] = await Promise.all([digest(currentPassword), digest(newPassword)]);
+  }
+
+  const current = readAccount(fixture);
+  if (localStorage.getItem(sessionKey) !== id) throw new Error('Sign in again to edit your profile.');
+  if (previousHash && current.passwordHash !== previousHash) throw new Error('The current password is incorrect.');
+  const others = accounts.filter((account) => account.email !== id).map(readAccount);
+  if (others.some((account) => account.email === address)) throw new Error('That email address is already in use.');
+  if (others.some((account) => account.phone === number)) throw new Error('That mobile number is already in use.');
+
+  const updated = { id, fullName: name, email: address, phone: number, passwordHash: newHash ?? current.passwordHash };
+  localStorage.setItem(profileKey(id), JSON.stringify(updated));
+  if (current.email !== address || newHash) localStorage.removeItem(resetKey(id));
+  return reporterProfile(updated);
 }
 
 export async function requestPasswordReset(email, simulateFailure) {
   await checkConnection(simulateFailure);
   const address = email.trim().toLowerCase();
-  if (!accounts.some((account) => account.email === address)) return null;
+  const account = accounts.map(readAccount).find((candidate) => candidate.email === address);
+  if (!account) return null;
   const token = crypto.randomUUID();
-  localStorage.setItem(resetKey(address), JSON.stringify({ token, expires: Date.now() + 30 * 60 * 1000 }));
+  localStorage.setItem(resetKey(account.id), JSON.stringify({ token, expires: Date.now() + 30 * 60 * 1000 }));
   const url = new URL(window.location.href);
   url.hash = 'reset=' + token;
   return url.href;
@@ -76,7 +136,7 @@ export async function updatePassword(token, password, simulateFailure) {
   const hash = await digest(password);
   const account = findResetAccount(token);
   if (!account) throw new Error('This reset link is invalid or expired. Request a new link.');
-  localStorage.setItem(passwordKey(account.email), hash);
+  localStorage.setItem(profileKey(account.email), JSON.stringify({ ...readAccount(account), passwordHash: hash }));
   localStorage.removeItem(resetKey(account.email));
   if (localStorage.getItem(sessionKey) === account.email) signOut();
 }

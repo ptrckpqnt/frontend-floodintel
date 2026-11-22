@@ -36,7 +36,7 @@ function App() {
     setToken(null);
   }
 
-  return reporter && token === null ? <ReporterWorkspace key={reporter.email} reporter={reporter}
+  return reporter && token === null ? <ReporterWorkspace key={reporter.id} reporter={reporter} onReporterUpdated={setReporter}
     renderReportForm={(props) => <FloodReportForm {...props} />} onSignOut={() => {
     signOut();
     setReporter(null);

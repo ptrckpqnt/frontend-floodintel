@@ -157,7 +157,9 @@ export default function FloodReportForm({ onSubmitted, onViewReport, onBack, pho
 
   return <section className="reporter-inner flood-report">
     <header className="flood-report-header">
-      <button className="reporter-text-button" type="button" aria-label="Back to Home" onClick={onBack}>←</button>
+      <button className="reporter-text-button reporter-back-home" type="button" aria-label="Back to Home" onClick={onBack}>
+        <span className="reporter-back-icon" aria-hidden="true" />
+      </button>
       <div>
         <h1>Submit Flood Report</h1>
         <p>{needsFirstPhoto ? 'Take a photo to continue' : photo ? 'Photo attached — fill in the details' : 'Add a photo and describe the flooding'}</p>
@@ -204,7 +206,7 @@ export default function FloodReportForm({ onSubmitted, onViewReport, onBack, pho
             {field('landmark', 'Landmark / Street', { placeholder: 'e.g., Near the basketball court' })}
             <div>
               <p className="field-label">GPS coordinates *</p>
-              <button className="secondary" type="button" onClick={captureLocation} disabled={locating}
+              <button className="secondary flood-capture-location" type="button" onClick={captureLocation} disabled={locating}
                 aria-invalid={Boolean(!location && locationMessage)}
                 aria-describedby={locationMessage ? 'report-location-error' : undefined}>
                 {locating ? 'Getting location…' : location ? 'Update location' : 'Capture location'}

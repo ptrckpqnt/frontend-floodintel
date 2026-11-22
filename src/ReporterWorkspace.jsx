@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import EditReporterProfile from './EditReporterProfile';
 
 const examples = [
   { id: 'sample-aroma', location: 'Aroma Street', dateLabel: 'Jun 24, 01:23 AM', waterLevel: '75 cm', status: 'Awaiting Review',
@@ -68,6 +69,7 @@ function Reports({ reports, onSelect }) {
             <small>{report.waterLevel} · {report.dateLabel}</small>
           </span>
           <ReportStatus status={report.status} />
+          <span className="reporter-recent-arrow"><Icon name="chevron" /></span>
         </button>
       </li>
     ))}
@@ -158,12 +160,16 @@ function ReportHistory({ reports, onBack, selected, fromHome, onSelect, reporter
 
   return <section className="reporter-history" aria-labelledby="report-history-title">
     <header className={`reporter-history-header${selected ? '' : ' reporter-history-header-list'}`}>
-      <div>
-        <button className="reporter-text-button reporter-history-back" type="button" onClick={() => selected && !fromHome ? onSelect(null) : onBack()}>
-          {selected && !fromHome ? '← Back to Report History' : '← Back to Home'}
+      <div className="reporter-history-heading">
+        <button className={`reporter-text-button reporter-history-back${selected && !fromHome ? '' : ' reporter-back-home'}`}
+          type="button" onClick={() => selected && !fromHome ? onSelect(null) : onBack()}>
+          <span className="reporter-back-icon" aria-hidden="true" />
+          {selected && !fromHome ? 'Back to Report History' : 'Back to Home'}
         </button>
-        <h1 id="report-history-title" tabIndex="-1">{selected ? 'Report Details' : 'Report History'}</h1>
-        <p>{selected ? `Report ID: ${selected.id}` : 'View all your submitted reports'}</p>
+        <div>
+          <h1 id="report-history-title" tabIndex="-1">{selected ? 'Report Details' : 'Report History'}</h1>
+          <p>{selected ? `Report ID: ${selected.id}` : 'View all your submitted reports'}</p>
+        </div>
       </div>
       {!selected && <div className="reporter-history-controls" role="group" aria-label="Filter reports">
         <label className="reporter-history-search">
@@ -226,14 +232,14 @@ function ReporterHome({ reports, navigate, mobileCapture, onSelectReport, report
           <div><dt>{label}</dt><dd>{value}</dd></div><Icon name={icon} />
         </div>)}
       </dl>
-      <button className="reporter-primary" type="button" onClick={() => navigate('submit')}>
-        <Icon name={mobileCapture ? 'camera' : 'submit'} /> {mobileCapture ? 'Take Report Photo' : 'New Flood Report'}
-      </button>
       <div className="reporter-home-columns">
+        <button className="reporter-primary" type="button" onClick={() => navigate('submit')}>
+          <Icon name={mobileCapture ? 'camera' : 'submit'} /> {mobileCapture ? 'Take Report Photo' : 'New Flood Report'}
+        </button>
         <section className="reporter-card">
           <div className="reporter-card-heading">
             <h2>Recent Reports</h2>
-            <button className="reporter-text-button" type="button" onClick={() => navigate('reports')}>View All</button>
+            <button className="reporter-text-button reporter-view-all" type="button" onClick={() => navigate('reports')}>View All Reports</button>
           </div>
           <p>Your latest submissions</p>
           <Reports reports={reports.slice(0, 5)} onSelect={onSelectReport} />
@@ -247,9 +253,23 @@ function ReporterHome({ reports, navigate, mobileCapture, onSelectReport, report
   </>;
 }
 
-function ReporterProfile({ onSignOut, reporter }) {
+function ReporterProfile({ onSignOut, reporter, onReporterUpdated }) {
   const confirmation = useRef(null);
   const cancel = useRef(null);
+  const editDialog = useRef(null);
+  const [editVersion, setEditVersion] = useState(0);
+  const [saved, setSaved] = useState(false);
+
+  function openEditor() {
+    setSaved(false);
+    editDialog.current.showModal();
+  }
+
+  function saveProfile(nextReporter) {
+    onReporterUpdated(nextReporter);
+    editDialog.current.close();
+    setSaved(true);
+  }
 
   function confirmSignOut() {
     confirmation.current.showModal();
@@ -257,10 +277,17 @@ function ReporterProfile({ onSignOut, reporter }) {
   }
 
   return <section className="reporter-inner reporter-profile" aria-label="Field Reporter profile">
-    <header className="reporter-profile-heading">
-      <span className="reporter-profile-avatar" aria-hidden="true">{reporter.fullName[0]}</span>
-      <h1>{reporter.fullName}</h1>
-    </header>
+    <div className="reporter-profile-identity">
+      <div className="reporter-profile-heading">
+        <span className="reporter-profile-avatar" aria-hidden="true">{reporter.fullName[0]}</span>
+        <h1>{reporter.fullName}</h1>
+      </div>
+      <div className="reporter-profile-actions">
+        <button className="secondary reporter-edit-profile-button" type="button" onClick={openEditor}>Edit Profile</button>
+        <button className="reporter-profile-logout" type="button" onClick={confirmSignOut}>Log Out</button>
+      </div>
+    </div>
+    {saved && <p className="reporter-profile-saved" role="status">Profile updated.</p>}
     <section className="reporter-card reporter-profile-card" aria-labelledby="profile-professional-heading">
       <h2 id="profile-professional-heading">Professional Information</h2>
       <dl className="reporter-profile-fields">
@@ -275,7 +302,6 @@ function ReporterProfile({ onSignOut, reporter }) {
         <div><Icon name="mail" /><div><dt>Registered Email</dt><dd>{reporter.email}</dd></div></div>
       </dl>
     </section>
-    <button className="reporter-profile-logout" type="button" onClick={confirmSignOut}>Log Out</button>
     <dialog ref={confirmation} className="reporter-logout-dialog"
       aria-labelledby="reporter-logout-title" aria-describedby="reporter-logout-description">
       <h2 id="reporter-logout-title">Are you sure you want to sign out?</h2>
@@ -283,10 +309,15 @@ function ReporterProfile({ onSignOut, reporter }) {
       <button type="button" className="reporter-profile-logout" onClick={onSignOut}>Sign Out</button>
       <button ref={cancel} className="reporter-logout-cancel" type="button" onClick={() => confirmation.current.close()}>Cancel</button>
     </dialog>
+    <dialog ref={editDialog} className="reporter-edit-dialog" aria-labelledby="reporter-edit-title"
+      onClose={() => setEditVersion((previous) => previous + 1)}>
+      <EditReporterProfile key={editVersion} reporter={reporter} onSaved={saveProfile}
+        onCancel={() => editDialog.current.close()} />
+    </dialog>
   </section>;
 }
 
-export default function ReporterWorkspace({ onSignOut, renderReportForm, reporter }) {
+export default function ReporterWorkspace({ onSignOut, renderReportForm, reporter, onReporterUpdated }) {
   const [screen, setScreen] = useState('home');
   const [selectedReport, setSelectedReport] = useState(null);
   const [reports, setReports] = useState(examples);
@@ -351,7 +382,16 @@ export default function ReporterWorkspace({ onSignOut, renderReportForm, reporte
     <input ref={photoPicker} type="file" accept="image/*" capture={mobileCapture ? 'environment' : undefined}
       hidden onChange={(event) => choosePhoto(event.target.files[0])} />
     <aside className="reporter-sidebar">
-      <div className="reporter-brand"><span aria-hidden="true">F</span>FloodIntel</div>
+      <div className="reporter-brand">
+        <span aria-hidden="true">
+          <svg viewBox="0 0 32 32">
+            <path fill="#073263" d="M4 15C4 9 8 4 14 4h15c-1 4-3 6-7 6h-8c-4 0-7 2-10 5Z" />
+            <path fill="#008de9" d="M4 24c0-7 5-12 11-12h11c-1 4-3 6-7 6h-6c-3 0-6 2-9 6Z" />
+            <path fill="#0056ae" d="M4 26c0-4 3-7 8-8v5c0 4-3 7-8 7Z" />
+          </svg>
+        </span>
+        FloodIntel
+      </div>
       <nav className="reporter-nav" aria-label="Field Reporter">
         {navigation.map(([id, label]) => <button key={id} type="button" className={`reporter-nav-${id}`}
           aria-current={screen === id ? 'page' : undefined} onClick={() => navigate(id)}>
@@ -359,9 +399,12 @@ export default function ReporterWorkspace({ onSignOut, renderReportForm, reporte
           {id === 'submit' ? mobileCapture ? 'Take Photo' : 'New Report' : label}
         </button>)}
       </nav>
-      <div className="reporter-sidebar-account"><strong>{reporter.fullName}</strong><small>{reporter.role}</small></div>
+      <div className="reporter-sidebar-account">
+        <span className="reporter-sidebar-initial" aria-hidden="true">{reporter.fullName[0]}</span>
+        <div><strong>{reporter.fullName}</strong><small>{reporter.role}</small></div>
+      </div>
     </aside>
-    <main className={screen === 'reports' ? 'reporter-main reporter-main-history' : 'reporter-main'}>
+    <main className="reporter-main">
       {screen === 'home' && <ReporterHome reports={reports} navigate={navigate} mobileCapture={mobileCapture}
         onSelectReport={selectReport} reporter={reporter} />}
       {screen === 'reports' && <ReportHistory reports={reports} onBack={() => navigate('home')}
@@ -372,7 +415,7 @@ export default function ReporterWorkspace({ onSignOut, renderReportForm, reporte
         mobileCapture, onChoosePhoto: openPhotoPicker,
         onClearPhoto: () => { setPhoto(null); setPhotoError(''); },
       })}
-      {screen === 'profile' && <ReporterProfile onSignOut={onSignOut} reporter={reporter} />}
+      {screen === 'profile' && <ReporterProfile onSignOut={onSignOut} reporter={reporter} onReporterUpdated={onReporterUpdated} />}
     </main>
   </div>;
 }
