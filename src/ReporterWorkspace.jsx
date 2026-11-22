@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 
 const examples = [
   { id: 'sample-aroma', location: 'Aroma Street', when: 'Sample report', dateLabel: 'Jun 24, 01:23 AM', waterLevel: 'Waist-deep (50–100 cm)', status: 'Awaiting Review' },
@@ -113,7 +113,7 @@ function ReportHistory({ reports, onBack }) {
   </section>;
 }
 
-function ReporterHome({ reports, navigate }) {
+function ReporterHome({ reports, navigate, mobileCapture }) {
   const stats = [
     ['Total Submitted', reports.length, 'reports'],
     ['Accepted', reports.filter(({ status }) => status === 'Accepted').length, 'accepted'],
@@ -138,7 +138,7 @@ function ReporterHome({ reports, navigate }) {
         </div>)}
       </dl>
       <button className="reporter-primary" type="button" onClick={() => navigate('submit')}>
-        <Icon name="submit" /> Submit Flood Report
+        <Icon name={mobileCapture ? 'camera' : 'submit'} /> {mobileCapture ? 'Take Report Photo' : 'New Flood Report'}
       </button>
       <div className="reporter-home-columns">
         <section className="reporter-card">
@@ -161,17 +161,48 @@ function ReporterHome({ reports, navigate }) {
 export default function ReporterWorkspace({ onSignOut, renderReportForm }) {
   const [screen, setScreen] = useState('home');
   const [reports, setReports] = useState(examples);
+  const [photo, setPhoto] = useState(null);
+  const [photoError, setPhotoError] = useState('');
+  const photoPicker = useRef(null);
+  const mobileCapture = typeof navigator !== 'undefined' && (
+    navigator.userAgentData?.mobile === true ||
+    /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+    (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1)
+  );
+
+  function openPhotoPicker(capture = mobileCapture) {
+    const input = photoPicker.current;
+    if (capture) input.setAttribute('capture', 'environment');
+    else input.removeAttribute('capture');
+    input.value = '';
+    input.click();
+  }
+
+  function choosePhoto(image) {
+    if (!image) return;
+    if (!image.type.startsWith('image/')) {
+      setPhotoError('Choose an image for the report.');
+      return;
+    }
+    setPhotoError('');
+    setPhoto({ file: image, capturedAt: new Date().toISOString() });
+  }
 
   function navigate(next) {
-    setScreen(next);
-    window.scrollTo(0, 0);
+    if (next !== screen) {
+      setPhoto(null);
+      setPhotoError('');
+      setScreen(next);
+      window.scrollTo(0, 0);
+    }
+    if (next === 'submit' && mobileCapture) openPhotoPicker();
   }
 
   function recordReport(report, confirmation) {
     const submittedAt = Date.now();
     const row = {
       id: confirmation.id,
-      location: `${report.latitude.toFixed(5)}, ${report.longitude.toFixed(5)}`,
+      location: report.generalArea,
       when: 'Simulated submission',
       dateLabel: reportDate.format(submittedAt),
       waterLevel: `${report.waterLevelCm} cm`,
@@ -181,22 +212,27 @@ export default function ReporterWorkspace({ onSignOut, renderReportForm }) {
     setReports((previous) => previous.some(({ id }) => id === row.id) ? previous : [row, ...previous]);
   }
 
-  return <div className="reporter-workspace">
+  return <div className={screen === 'submit' ? 'reporter-workspace reporter-workspace-submitting' : 'reporter-workspace'}>
+    <input ref={photoPicker} type="file" accept="image/*" hidden onChange={(event) => choosePhoto(event.target.files[0])} />
     <aside className="reporter-sidebar">
       <div className="reporter-brand"><span aria-hidden="true">F</span>FloodIntel</div>
       <nav className="reporter-nav" aria-label="Field Reporter">
         {navigation.map(([id, label]) => <button key={id} type="button" className={`reporter-nav-${id}`}
           aria-current={screen === id ? 'page' : undefined} onClick={() => navigate(id)}>
           <span className="reporter-nav-icon"><Icon name={id} />{id === 'submit' && <Icon name="camera" />}</span>
-          {label}
+          {id === 'submit' ? mobileCapture ? 'Take Photo' : 'New Report' : label}
         </button>)}
       </nav>
       <div className="reporter-sidebar-account"><strong>{reporterName}</strong><small>Field Reporter</small></div>
     </aside>
     <main className={screen === 'reports' ? 'reporter-main reporter-main-history' : 'reporter-main'}>
-      {screen === 'home' && <ReporterHome reports={reports} navigate={navigate} />}
+      {screen === 'home' && <ReporterHome reports={reports} navigate={navigate} mobileCapture={mobileCapture} />}
       {screen === 'reports' && <ReportHistory reports={reports} onBack={() => navigate('home')} />}
-      {screen === 'submit' && renderReportForm(recordReport)}
+      {screen === 'submit' && renderReportForm({
+        onSubmitted: recordReport, onBack: () => navigate('home'), photo, photoError,
+        mobileCapture, onChoosePhoto: openPhotoPicker, onCapturePhoto: choosePhoto,
+        onClearPhoto: () => { setPhoto(null); setPhotoError(''); },
+      })}
       {screen === 'profile' && <section className="reporter-inner">
         <h1>Profile</h1>
         <div className="reporter-card">
