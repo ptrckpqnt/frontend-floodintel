@@ -1,7 +1,7 @@
 // Client-side fixtures for the demo. Laravel will own production authentication.
 const accounts = [
   { fullName: 'Mark Jason Patron', email: 'markjasonpatron@gmail.com', phone: '09000000001', initialHash: '332380e74195a60f4df62aef6b1869540492112ab00217322ede4dea1926dbcc' },
-  { fullName: 'Jeremy Ortega', email: 'jeremyortega@gmail.com', phone: '09000000002', initialHash: '464b035251edede494de26c675b39d73ffc5d9e599c8c0d83ded783c1eab979d' },
+  { fullName: 'Patrick Pioquinto', email: 'patrickpioquinto@gmail.com', phone: '09000000004', role: 'BDRRM Officer', initialHash: 'c5f71e11073a7245bb5ce15fcb72a9d66a069e5e0bb1d6790dd95344ab8e66b2' },
   { fullName: 'Aljon Ken Fernandez', email: 'aljonkenfernandez@gmail.com', phone: '09000000003', initialHash: '5e2c3e9e303da226b679cb0b67fa008055654c3121a5cdd0810c7e3c5aa3edd4' },
 ];
 
@@ -20,6 +20,7 @@ function readAccount(account) {
   }
   return {
     id,
+    role: account.role ?? 'Field Reporter',
     fullName: saved?.fullName ?? account.fullName,
     email: saved?.email ?? account.email,
     phone: saved?.phone ?? account.phone,
@@ -27,19 +28,19 @@ function readAccount(account) {
   };
 }
 
-function reporterProfile({ id, fullName, email, phone }) {
-  return { id, fullName, email, phone, role: 'Field Reporter', barangay: 'Paligui' };
+function accountProfile({ id, fullName, email, phone, role }) {
+  return { id, fullName, email, phone, role, barangay: 'Paligui' };
 }
 
 function normalizePhone(phone) {
   return phone.trim().replace(/^\+63(?=9)/, '0');
 }
 
-export function getSignedInReporter() {
+export function getSignedInAccount() {
   const id = localStorage.getItem(sessionKey);
   const account = accounts.find((candidate) => candidate.email === id);
   if (!account) return null;
-  return reporterProfile(readAccount(account));
+  return accountProfile(readAccount(account));
 }
 
 export function signOut() {
@@ -67,12 +68,12 @@ export async function signIn(identifier, password, simulateFailure) {
     throw new Error('The phone number, email address, or password is incorrect.');
   }
   localStorage.setItem(sessionKey, account.id);
-  return reporterProfile(account);
+  return accountProfile(account);
 }
 
 export async function updateReporterProfile(id, { fullName, email, phone, currentPassword, newPassword, confirmPassword }) {
   const fixture = accounts.find((account) => account.email === id);
-  if (!fixture || localStorage.getItem(sessionKey) !== id) throw new Error('Sign in again to edit your profile.');
+  if (!fixture || fixture.role === 'BDRRM Officer' || localStorage.getItem(sessionKey) !== id) throw new Error('Sign in again to edit your profile.');
   const name = fullName.trim();
   const address = email.trim().toLowerCase();
   const number = normalizePhone(phone);
@@ -96,10 +97,10 @@ export async function updateReporterProfile(id, { fullName, email, phone, curren
   if (others.some((account) => account.email === address)) throw new Error('That email address is already in use.');
   if (others.some((account) => account.phone === number)) throw new Error('That mobile number is already in use.');
 
-  const updated = { id, fullName: name, email: address, phone: number, passwordHash: newHash ?? current.passwordHash };
+  const updated = { id, role: current.role, fullName: name, email: address, phone: number, passwordHash: newHash ?? current.passwordHash };
   localStorage.setItem(profileKey(id), JSON.stringify(updated));
   if (current.email !== address || newHash) localStorage.removeItem(resetKey(id));
-  return reporterProfile(updated);
+  return accountProfile(updated);
 }
 
 export async function requestPasswordReset(email, simulateFailure) {

@@ -1,6 +1,17 @@
 # FloodIntel frontend
 
-The React demo opens with the authentication flow from the Figma draft. Signing in opens the Field Reporter home.
+The React demo opens with the authentication flow from the Figma draft. Signing in opens the workspace for the account's role.
+
+## Frontend structure
+
+- `src/main.jsx` mounts React and loads the stylesheets.
+- `src/App.jsx` handles the session and chooses which screen to show.
+- `src/features/auth/` contains sign-in, password reset, and the demo account service.
+- `src/features/field-reporter/` contains the Field Reporter workspace, profile editor, flood report form, and report submission service.
+- `src/styles/base.css` contains shared page and form styles. The authentication and Field Reporter styles live with their features.
+
+- `src/features/bdrrmo/` contains the BDRRM Officer dashboard and its demo views.
+- `src/components/WorkspaceSidebar.jsx` provides the navigation and branding used by both workspaces.
 
 ## Open in VS Code
 

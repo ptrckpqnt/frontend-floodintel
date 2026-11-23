@@ -1,4 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
+import WorkspaceSidebar, { Icon } from '../../components/WorkspaceSidebar';
+import WorkspaceHeader from '../../components/WorkspaceHeader';
+import MdrrmoHotlineLink from '../../components/MdrrmoHotlineLink';
 import EditReporterProfile from './EditReporterProfile';
 
 const examples = [
@@ -28,29 +31,6 @@ const reportDate = new Intl.DateTimeFormat('en-PH', {
 const fullReportDate = new Intl.DateTimeFormat('en-PH', {
   dateStyle: 'full', timeStyle: 'short',
 });
-
-const icons = {
-  home: 'M3 10 12 3l9 7v10H3z M9 20v-7h6v7',
-  reports: 'M6 3h8l4 4v14H6z M14 3v5h4 M9 12h6 M9 16h6',
-  submit: 'M12 8v8 M8 12h8 M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0',
-  camera: 'M21 14v5H3V8h4l2-3h6l2 3h1 M15 13a3 3 0 1 1-6 0 3 3 0 0 1 6 0 M21 3v8 M17 7h8',
-  profile: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0',
-  phone: 'M4 4h4l2 5-2 2a13 13 0 0 0 5 5l2-2 5 2v4C12 22 2 12 4 4Z',
-  mail: 'M3 5h18v14H3z M3 6l9 7 9-7',
-  accepted: 'm3 17 6-6 4 4 8-8 M15 7h6v6',
-  waiting: 'M12 6v6l4 2 M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0',
-  calendar: 'M4 5h16v16H4z M4 10h16 M8 3v4 M16 3v4',
-  pin: 'M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0 M14 10a2 2 0 1 1-4 0 2 2 0 0 1 4 0',
-  alert: 'M12 3 2 21h20z M12 9v4 M12 17h.01',
-  search: 'M16 10a6 6 0 1 1-12 0 6 6 0 0 1 12 0 M14.5 14.5 21 21',
-  filter: 'M3 4h18l-7 8v6l-4 2v-8z',
-  chevron: 'm10 6 6 6-6 6',
-};
-
-function Icon({ name }) {
-  return <svg viewBox="0 0 26 24" fill="none" stroke="currentColor" strokeWidth="1.8"
-    strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={icons[name]} /></svg>;
-}
 
 const navigation = [['home', 'Home'], ['reports', 'My Reports'], ['submit', 'Submit'], ['profile', 'Profile']];
 
@@ -222,10 +202,7 @@ function ReporterHome({ reports, navigate, mobileCapture, onSelectReport, report
     }).length, 'calendar'],
   ];
   return <>
-    <header className="reporter-heading">
-      <h1>{reporter.fullName}</h1>
-      <p>{reporter.role} · Brgy. {reporter.barangay}</p>
-    </header>
+    <WorkspaceHeader account={reporter} />
     <div className="reporter-home-body">
       <dl className="reporter-stats">
         {stats.map(([label, value, icon]) => <div className={`reporter-stat reporter-stat-${icon}`} key={label}>
@@ -246,7 +223,7 @@ function ReporterHome({ reports, navigate, mobileCapture, onSelectReport, report
         </section>
         <aside className="reporter-hotline">
           <Icon name="alert" />
-          <div><h2>Emergency Hotline</h2><p>Life-threatening situations: MDRRMO <strong>0915-123-4567</strong></p><small>Sample contact</small></div>
+          <div><h2>Emergency Hotline</h2><p>Life-threatening situations: MDRRMO <MdrrmoHotlineLink /></p></div>
         </aside>
       </div>
     </div>
@@ -381,29 +358,8 @@ export default function ReporterWorkspace({ onSignOut, renderReportForm, reporte
   return <div className={screen === 'submit' ? 'reporter-workspace reporter-workspace-submitting' : 'reporter-workspace'}>
     <input ref={photoPicker} type="file" accept="image/*" capture={mobileCapture ? 'environment' : undefined}
       hidden onChange={(event) => choosePhoto(event.target.files[0])} />
-    <aside className="reporter-sidebar">
-      <div className="reporter-brand">
-        <span aria-hidden="true">
-          <svg viewBox="0 0 32 32">
-            <path fill="#073263" d="M4 15C4 9 8 4 14 4h15c-1 4-3 6-7 6h-8c-4 0-7 2-10 5Z" />
-            <path fill="#008de9" d="M4 24c0-7 5-12 11-12h11c-1 4-3 6-7 6h-6c-3 0-6 2-9 6Z" />
-            <path fill="#0056ae" d="M4 26c0-4 3-7 8-8v5c0 4-3 7-8 7Z" />
-          </svg>
-        </span>
-        FloodIntel
-      </div>
-      <nav className="reporter-nav" aria-label="Field Reporter">
-        {navigation.map(([id, label]) => <button key={id} type="button" className={`reporter-nav-${id}`}
-          aria-current={screen === id ? 'page' : undefined} onClick={() => navigate(id)}>
-          <span className="reporter-nav-icon"><Icon name={id} />{id === 'submit' && <Icon name="camera" />}</span>
-          {id === 'submit' ? mobileCapture ? 'Take Photo' : 'New Report' : label}
-        </button>)}
-      </nav>
-      <div className="reporter-sidebar-account">
-        <span className="reporter-sidebar-initial" aria-hidden="true">{reporter.fullName[0]}</span>
-        <div><strong>{reporter.fullName}</strong><small>{reporter.role}</small></div>
-      </div>
-    </aside>
+    <WorkspaceSidebar account={reporter} navigation={navigation} screen={screen} navigate={navigate}
+      mobileSubmitLabel={mobileCapture ? 'Take Photo' : 'New Report'} />
     <main className="reporter-main">
       {screen === 'home' && <ReporterHome reports={reports} navigate={navigate} mobileCapture={mobileCapture}
         onSelectReport={selectReport} reporter={reporter} />}
