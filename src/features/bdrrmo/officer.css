@@ -39,11 +39,8 @@
 .officer-actions .officer-inbox-action { border-color: #b3cefa; background: #eaf2ff; color: #0848b5; }
 .officer-actions .officer-inbox-action:hover { background: #dbe9ff; }
 .officer-workspace .reporter-status[data-tone="sent"] { background: #e0eeff; color: #0848b5; }
-.officer-panel .officer-reports, .officer-profile, .officer-draft { margin-top: 16px; }
+.officer-panel .officer-reports, .officer-draft { margin-top: 16px; }
 .officer-draft textarea { width: 100%; padding: 10px; border: 1px solid #849e98; border-radius: 7px; font: inherit; resize: vertical; }
-.officer-profile { display: grid; gap: 12px; overflow-wrap: anywhere; }
-.officer-profile dt { font-weight: 650; }
-.officer-profile dd { margin: 0; }
 
 @media (width < 900px) {
   .officer-workspace .reporter-nav { grid-template-columns: repeat(5, minmax(0, 1fr)); }

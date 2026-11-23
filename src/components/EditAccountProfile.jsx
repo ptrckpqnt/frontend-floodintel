@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
-import { updateReporterProfile } from '../auth/authService';
+import { updateAccountProfile } from '../features/auth/authService';
 
-export default function EditReporterProfile({ reporter, onSaved, onCancel }) {
+export default function EditAccountProfile({ account, onSaved, onCancel }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const errorMessage = useRef(null);
@@ -13,7 +13,7 @@ export default function EditReporterProfile({ reporter, onSaved, onCancel }) {
     setSaving(true);
     setError('');
     try {
-      onSaved(await updateReporterProfile(reporter.id, values));
+      onSaved(await updateAccountProfile(account.id, values));
     } catch (cause) {
       setError(cause.message);
       requestAnimationFrame(() => errorMessage.current?.focus());
@@ -28,15 +28,15 @@ export default function EditReporterProfile({ reporter, onSaved, onCancel }) {
     <fieldset disabled={saving}>
       <div>
         <label htmlFor="reporter-edit-name">Full Name</label>
-        <input id="reporter-edit-name" name="fullName" autoComplete="name" defaultValue={reporter.fullName} required />
+        <input id="reporter-edit-name" name="fullName" autoComplete="name" defaultValue={account.fullName} required />
       </div>
       <div>
         <label htmlFor="reporter-edit-email">Registered Email</label>
-        <input id="reporter-edit-email" name="email" type="email" autoComplete="email" defaultValue={reporter.email} required />
+        <input id="reporter-edit-email" name="email" type="email" autoComplete="email" defaultValue={account.email} required />
       </div>
       <div>
         <label htmlFor="reporter-edit-phone">Registered Mobile Number</label>
-        <input id="reporter-edit-phone" name="phone" type="tel" autoComplete="tel" defaultValue={reporter.phone} required />
+        <input id="reporter-edit-phone" name="phone" type="tel" autoComplete="tel" defaultValue={account.phone} required />
       </div>
     </fieldset>
     <fieldset disabled={saving} className="reporter-edit-password">

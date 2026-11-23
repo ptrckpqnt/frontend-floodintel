@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import WorkspaceSidebar, { Icon } from '../../components/WorkspaceSidebar';
 import WorkspaceHeader from '../../components/WorkspaceHeader';
+import WorkspaceProfile from '../../components/WorkspaceProfile';
 import MdrrmoHotlineLink from '../../components/MdrrmoHotlineLink';
 import OfficerInbox, { inboxStatuses } from './OfficerInbox';
 import OfficerReportReview from './OfficerReportReview';
@@ -77,7 +78,7 @@ function Dashboard({ reports, onInbox, onSelect, onNewSitRep }) {
   </>;
 }
 
-export default function OfficerWorkspace({ account, onSignOut }) {
+export default function OfficerWorkspace({ account, onSignOut, onAccountUpdated }) {
   const [reports, setReports] = useState(sampleReports);
   const [screen, setScreen] = useState('home');
   const [inboxStatus, setInboxStatus] = useState('');
@@ -128,7 +129,9 @@ export default function OfficerWorkspace({ account, onSignOut }) {
         onStatusChange={setInboxStatus} selected={selected} onSelect={selectReport} />}
       {screen === 'inbox' && selected && <OfficerReportReview key={selected.id} report={selected}
         onBack={() => selectReport(null)} onDecision={recordDecision} />}
-      {screen !== 'inbox' && <>
+      {screen === 'profile' && <WorkspaceProfile account={account} onSignOut={onSignOut}
+        onAccountUpdated={onAccountUpdated} avatarLetters={2} />}
+      {screen !== 'inbox' && screen !== 'profile' && <>
         <WorkspaceHeader account={account} title={screen === 'team' ? 'Manage Team' : screen === 'home' ? undefined : title}
           subtitle={screen === 'team' ? 'Field reporters' : undefined} />
         <div className="reporter-home-body">
@@ -153,16 +156,6 @@ export default function OfficerWorkspace({ account, onSignOut }) {
             </div> : <ReportList items={sent} onSelect={selectReport} />}
           </section>}
           {screen === 'team' && <OfficerTeam account={account} />}
-          {screen === 'profile' && <section className="reporter-card officer-panel">
-            <h2>{account.fullName}</h2>
-            <dl className="officer-profile">
-              <div><dt>Role</dt><dd>{account.role}</dd></div>
-              <div><dt>Barangay</dt><dd>{account.barangay}</dd></div>
-              <div><dt>Email</dt><dd>{account.email}</dd></div>
-              <div><dt>Mobile number</dt><dd>{account.phone}</dd></div>
-            </dl>
-            <button type="button" className="reporter-primary" onClick={onSignOut}>Log Out</button>
-          </section>}
         </div>
       </>}
     </main>

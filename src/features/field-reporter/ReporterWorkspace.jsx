@@ -1,9 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import WorkspaceSidebar, { Icon } from '../../components/WorkspaceSidebar';
 import WorkspaceHeader from '../../components/WorkspaceHeader';
-import AccountAvatar from '../../components/AccountAvatar';
+import WorkspaceProfile from '../../components/WorkspaceProfile';
 import MdrrmoHotlineLink from '../../components/MdrrmoHotlineLink';
-import EditReporterProfile from './EditReporterProfile';
 
 const examples = [
   { id: 'sample-aroma', location: 'Aroma Street', dateLabel: 'Jun 24, 01:23 AM', waterLevel: '75 cm', status: 'Awaiting Review',
@@ -231,70 +230,6 @@ function ReporterHome({ reports, navigate, mobileCapture, onSelectReport, report
   </>;
 }
 
-function ReporterProfile({ onSignOut, reporter, onReporterUpdated }) {
-  const confirmation = useRef(null);
-  const cancel = useRef(null);
-  const editDialog = useRef(null);
-  const [editVersion, setEditVersion] = useState(0);
-  const [saved, setSaved] = useState(false);
-
-  function openEditor() {
-    setSaved(false);
-    editDialog.current.showModal();
-  }
-
-  function saveProfile(nextReporter) {
-    onReporterUpdated(nextReporter);
-    editDialog.current.close();
-    setSaved(true);
-  }
-
-  function confirmSignOut() {
-    confirmation.current.showModal();
-    cancel.current.focus();
-  }
-
-  return <section className="reporter-inner reporter-profile" aria-label="Field Reporter profile">
-    <div className="reporter-profile-identity">
-      <div className="reporter-profile-heading">
-        <AccountAvatar account={reporter} className="reporter-profile-avatar" />
-        <h1>{reporter.fullName}</h1>
-      </div>
-      <div className="reporter-profile-actions">
-        <button className="secondary reporter-edit-profile-button" type="button" onClick={openEditor}>Edit Profile</button>
-        <button className="reporter-profile-logout" type="button" onClick={confirmSignOut}>Log Out</button>
-      </div>
-    </div>
-    {saved && <p className="reporter-profile-saved" role="status">Profile updated.</p>}
-    <section className="reporter-card reporter-profile-card" aria-labelledby="profile-professional-heading">
-      <h2 id="profile-professional-heading">Professional Information</h2>
-      <dl className="reporter-profile-fields">
-        <div><Icon name="pin" /><div><dt>Barangay Assignment</dt><dd>{reporter.barangay}</dd></div></div>
-        <div><Icon name="profile" /><div><dt>Role</dt><dd>{reporter.role}</dd></div></div>
-      </dl>
-    </section>
-    <section className="reporter-card reporter-profile-card" aria-labelledby="profile-account-heading">
-      <h2 id="profile-account-heading">Account Information</h2>
-      <dl className="reporter-profile-fields">
-        <div><Icon name="phone" /><div><dt>Registered Mobile Number</dt><dd>{reporter.phone}</dd></div></div>
-        <div><Icon name="mail" /><div><dt>Registered Email</dt><dd>{reporter.email}</dd></div></div>
-      </dl>
-    </section>
-    <dialog ref={confirmation} className="reporter-logout-dialog"
-      aria-labelledby="reporter-logout-title" aria-describedby="reporter-logout-description">
-      <h2 id="reporter-logout-title">Are you sure you want to sign out?</h2>
-      <p id="reporter-logout-description">You will need to sign in again to submit or view flood reports.</p>
-      <button type="button" className="reporter-profile-logout" onClick={onSignOut}>Sign Out</button>
-      <button ref={cancel} className="reporter-logout-cancel" type="button" onClick={() => confirmation.current.close()}>Cancel</button>
-    </dialog>
-    <dialog ref={editDialog} className="reporter-edit-dialog" aria-labelledby="reporter-edit-title"
-      onClose={() => setEditVersion((previous) => previous + 1)}>
-      <EditReporterProfile key={editVersion} reporter={reporter} onSaved={saveProfile}
-        onCancel={() => editDialog.current.close()} />
-    </dialog>
-  </section>;
-}
-
 export default function ReporterWorkspace({ onSignOut, renderReportForm, reporter, onReporterUpdated }) {
   const [screen, setScreen] = useState('home');
   const [selectedReport, setSelectedReport] = useState(null);
@@ -372,7 +307,7 @@ export default function ReporterWorkspace({ onSignOut, renderReportForm, reporte
         mobileCapture, onChoosePhoto: openPhotoPicker,
         onClearPhoto: () => { setPhoto(null); setPhotoError(''); },
       })}
-      {screen === 'profile' && <ReporterProfile onSignOut={onSignOut} reporter={reporter} onReporterUpdated={onReporterUpdated} />}
+      {screen === 'profile' && <WorkspaceProfile account={reporter} onSignOut={onSignOut} onAccountUpdated={onReporterUpdated} />}
     </main>
   </div>;
 }

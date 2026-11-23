@@ -42,7 +42,7 @@ export default function App() {
 
   if (account && token === null) {
     if (account.role === 'BDRRM Officer') {
-      return <OfficerWorkspace key={account.id} account={account} onSignOut={handleSignOut} />;
+      return <OfficerWorkspace key={account.id} account={account} onAccountUpdated={setAccount} onSignOut={handleSignOut} />;
     }
     return <ReporterWorkspace key={account.id} reporter={account} onReporterUpdated={setAccount}
       renderReportForm={(props) => <FloodReportForm {...props} />} onSignOut={handleSignOut} />;
