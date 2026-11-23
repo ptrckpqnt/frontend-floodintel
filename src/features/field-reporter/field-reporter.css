@@ -169,13 +169,7 @@ button:is(.flood-capture-location, .reporter-edit-profile-button) {
 @media (forced-colors: active) {
   .reporter-history-controls select { appearance: auto; background-image: none; }
 }
-.reporter-history-search:focus-within, .reporter-history-controls select:focus {
-  outline: 1px solid #005cf5;
-  outline-offset: 0;
-  box-shadow: 0 0 0 2px #005cf51a;
-}
-.reporter-history-search:focus-within { color: #005cf5; }
-.reporter-history-controls input[type="search"]:focus { outline: none; }
+.reporter-history-search:focus-within { color: var(--focus-blue); }
 .reporter-history-results { padding: 16px; }
 .reporter-history-list { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
 .reporter-history-row {
@@ -362,7 +356,7 @@ button:is(.flood-capture-location, .reporter-edit-profile-button) {
 .flood-report form :is(input, select, textarea, button, [tabindex]) { scroll-margin-top: 100px; }
 .flood-required-note { margin: 0 0 12px; color: #536479; font-size: .85rem; }
 .flood-report-card button[aria-invalid="true"] { outline: 2px solid #a32b25; outline-offset: 2px; }
-.flood-report-card button[aria-invalid="true"]:focus-visible { outline: 3px solid #1d8477; outline-offset: 3px; }
+.flood-report-card button[aria-invalid="true"]:focus-visible { outline: 3px solid var(--focus-blue); outline-offset: 3px; }
 .flood-report-header button { padding: 4px 0; font-size: 1.25rem; }
 .flood-report-header h1 { margin: 0 0 4px; font-size: clamp(1.3rem, 4vw, 1.8rem); }
 .flood-report-header p { margin: 0; color: #536479; font-size: .88rem; }

@@ -64,8 +64,8 @@
 .sitrep-preview { margin-top: 12px; }
 .sitrep-preview h3 { margin: 0 0 6px; font-size: .87rem; }
 .sitrep-compose .sitrep-preview p { margin: 3px 0; font-size: .76rem; color: inherit; }
-.sitrep-compose .sitrep-endorse { min-height: 42px; margin-top: 12px; background: #101827; }
-.sitrep-compose .sitrep-endorse:hover:not(:disabled) { background: #233553; }
+.sitrep-compose .sitrep-endorse { min-height: 42px; margin-top: 12px; background: var(--reporter-blue); }
+.sitrep-compose .sitrep-endorse:is(:hover, :active):not(:disabled) { background: #0047ba; }
 .sitrep-compose .error { color: #96251e; }
 .sitrep-message { margin-top: 0; }
 

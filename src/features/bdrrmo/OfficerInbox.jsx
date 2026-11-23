@@ -18,7 +18,7 @@ export default function OfficerInbox({ reports, barangay, status, onStatusChange
         <p>Flood reports from Brgy. {barangay}</p>
       </div>
       <div className="reporter-history-controls" role="group" aria-label="Filter reports">
-        <label className="reporter-history-search">
+        <label className="reporter-history-search field-focus-group">
           <Icon name="search" />
           <input type="search" aria-label="Search by location or reporter" placeholder="Search by location or reporter…"
             value={search} onChange={(event) => setSearch(event.target.value)} />
