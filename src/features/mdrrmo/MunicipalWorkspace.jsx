@@ -9,6 +9,35 @@ const navigation = [['map', 'Map'], ['reports', 'Reports'], ['analytics', 'Analy
 const timeOptions = { timeZone: 'Asia/Manila' };
 const clockTime = new Intl.DateTimeFormat('en-PH', { ...timeOptions, hour: 'numeric', minute: '2-digit', second: '2-digit' });
 const clockDate = new Intl.DateTimeFormat('en-PH', { ...timeOptions, weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+const themeKey = 'floodintel.mdrrmo.theme';
+
+function readTheme() {
+  try {
+    return localStorage.getItem(themeKey) === 'dark' ? 'dark' : 'light';
+  } catch {
+    return 'light';
+  }
+}
+
+function ConnectionIndicator() {
+  const [online, setOnline] = useState(() => navigator.onLine);
+
+  useEffect(() => {
+    const sync = () => setOnline(navigator.onLine);
+    window.addEventListener('online', sync);
+    window.addEventListener('offline', sync);
+    sync();
+    return () => {
+      window.removeEventListener('online', sync);
+      window.removeEventListener('offline', sync);
+    };
+  }, []);
+
+  return <span className="municipal-connection" data-online={online} role="status">
+    <span className="municipal-connection-dot" aria-hidden="true" />
+    {online ? 'Online' : 'Offline'}
+  </span>;
+}
 
 function LocationCard({ report, onSelect }) {
   return <button type="button" className="municipal-location-card" onClick={() => onSelect(report)}>
@@ -54,6 +83,7 @@ function OperationalAnalytics({ reports, onSelect }) {
 export default function MunicipalWorkspace({ account, reports, onSignOut, loadError }) {
   const [panel, setPanel] = useState('map');
   const [collapsed, setCollapsed] = useState(false);
+  const [theme, setTheme] = useState(readTheme);
   const [selectedId, setSelectedId] = useState(null);
   const [search, setSearch] = useState('');
   const [hours, setHours] = useState(0);
@@ -80,7 +110,17 @@ export default function MunicipalWorkspace({ account, reports, onSignOut, loadEr
     setPanel('reports');
   }
 
-  return <div className={`reporter-workspace municipal-workspace${collapsed ? ' municipal-sidebar-collapsed' : ''}`}>
+  function toggleTheme() {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    try {
+      localStorage.setItem(themeKey, next);
+    } catch {
+      // The toggle remains available when the browser blocks preference storage.
+    }
+  }
+
+  return <div className={`reporter-workspace municipal-workspace${collapsed ? ' municipal-sidebar-collapsed' : ''}`} data-theme={theme}>
     <WorkspaceSidebar id="municipal-sidebar" account={account} avatarLetters={2} navigation={navigation} screen={panel}
       navigate={navigate} onSignOut={onSignOut} />
     <header className="municipal-header">
@@ -88,11 +128,23 @@ export default function MunicipalWorkspace({ account, reports, onSignOut, loadEr
         aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} onClick={() => setCollapsed(!collapsed)}>
         <Icon name="sidebar" />
       </button>
-      <div className="municipal-title"><h1>Municipal Flood Operations</h1><p>MDRRMO</p></div>
+      <div className="municipal-title">
+        <h1>Municipal Flood Operations</h1>
+        <p>MDRRMO <ConnectionIndicator /></p>
+      </div>
       <time className="municipal-clock" dateTime={new Date(now).toISOString()}>
         <strong>{clockTime.format(now)} <small>PHT</small></strong>
         <span>{clockDate.format(now)}</span>
       </time>
+      <button type="button" className="municipal-theme-toggle" onClick={toggleTheme}
+        aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+        title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true">
+          {theme === 'dark'
+            ? <><circle cx="12" cy="12" r="4" /><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5" /></>
+            : <path d="M20.8 15.2A8.9 8.9 0 0 1 8.8 3.2a9 9 0 1 0 12 12Z" />}
+        </svg>
+      </button>
     </header>
     <main className={`municipal-content${panel === 'map' ? '' : ' municipal-content-split'}`}>
       <div className="municipal-map-column">
@@ -105,10 +157,12 @@ export default function MunicipalWorkspace({ account, reports, onSignOut, loadEr
               <option value={168}>Last 7 days</option>
             </select>
           </label>
-          <span>{visible.filter(canMap).length} mapped of {visible.length} reports</span>
+          <span>{reports.length ? `${visible.filter(canMap).length} mapped of ${visible.length} reports`
+            : 'Waiting for a BDRRMO-endorsed SitRep'}</span>
+          {visible.some(({ isSample }) => isSample) && <span>Includes sample incidents</span>}
         </div>
         {loadError && <p className="municipal-load-error" role="alert">{loadError}</p>}
-        <FloodDepthMap reports={visible} selected={selected} onSelect={openReport} />
+        <FloodDepthMap reports={visible} selected={selected} onSelect={openReport} theme={theme} />
       </div>
       {panel !== 'map' && <aside className="municipal-panel" aria-label={panel === 'analytics' ? 'Operational analytics' : 'Location reports'}>
         <header className="municipal-panel-header">
@@ -129,7 +183,7 @@ export default function MunicipalWorkspace({ account, reports, onSignOut, loadEr
           </label>
           <p className="municipal-results" role="status">{matches.length} of {visible.length} reports</p>
           {matches.length ? matches.map((report) => <LocationCard key={report.id} report={report} onSelect={openReport} />)
-            : <p>No reports match the current filters.</p>}
+            : <p>{reports.length ? 'No reports match the current filters.' : 'No BDRRMO-endorsed reports yet.'}</p>}
         </div>)}
       </aside>}
     </main>

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Icon } from '../../components/WorkspaceSidebar';
 import { reportStatuses } from './reportData';
-import sampleFloodEvidence from './sample-flood-evidence.jpg';
+import SampleFloodPhoto from './SampleFloodPhoto';
 
 const fullReportDate = new Intl.DateTimeFormat('en-PH', {
   dateStyle: 'full', timeStyle: 'short',
@@ -32,16 +32,16 @@ export default function ReportDetails({ report, allowCall = false }) {
       {status && <Icon name={status.icon} />}
       <div><h2>Status: {report.status}</h2>
         {status && <p>{report.reviewNote || status.explanation}</p>}
+        {report.isSample && <p>Sample incident and measurements.</p>}
       </div>
     </section>
     <div className="reporter-detail-grid">
       <section className="reporter-card reporter-detail-card">
         <h2>Photo Evidence</h2>
         {photoUrl && <img className="reporter-detail-photo" src={photoUrl} alt="Submitted flood evidence" />}
-        {!report.photo && (report.id === 'sample-aroma' ? <>
-          <img className="reporter-detail-photo" src={sampleFloodEvidence} alt="Sample photo of a flooded street" />
-          <p>Sample photo</p>
-        </> : <p>No photo attached.</p>)}
+        {!report.photo && (report.isSample
+          ? <SampleFloodPhoto reportId={report.id} />
+          : <p>No photo attached.</p>)}
       </section>
       <section className="reporter-card reporter-detail-card">
         <div className="reporter-card-heading">

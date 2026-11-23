@@ -5,6 +5,7 @@ import { getSignedInAccount, signOut } from './features/auth/authService';
 import FloodReportForm from './features/field-reporter/FloodReportForm';
 import OfficerWorkspace from './features/bdrrmo/OfficerWorkspace';
 import MunicipalWorkspace from './features/mdrrmo/MunicipalWorkspace';
+import { endorsedReports } from './features/mdrrmo/mapData';
 import useReportBoard from './features/flood-reports/useReportBoard';
 import { addReport } from './features/flood-reports/reportStore';
 
@@ -47,7 +48,7 @@ export default function App() {
   if (account && token === null) {
     if (account.role === 'MDRRMO Officer') {
       return <MunicipalWorkspace key={account.id} account={account} onSignOut={handleSignOut}
-        reports={board.reports} loadError={loadError} />;
+        reports={endorsedReports(board)} loadError={loadError} />;
     }
     return <>
       {loadError && <p className="error" role="alert">{loadError}</p>}

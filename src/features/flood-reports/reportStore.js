@@ -1,6 +1,19 @@
-import { sampleReports } from './reportData.js';
+import { sampleReports, sampleSitReps } from './sanVicenteSamples.js';
 
-export const initialBoard = { reports: sampleReports, sitReps: [], version: 0 };
+export const initialBoard = { reports: sampleReports, sitReps: sampleSitReps, version: 0, seedVersion: 1 };
+const previousSampleIds = new Set(['sample-aroma', 'sample-villena', 'sample-riverside']);
+
+export function withSampleReports(board) {
+  if (!board) return initialBoard;
+  if (board.seedVersion === initialBoard.seedVersion) return board;
+  return {
+    ...board,
+    seedVersion: initialBoard.seedVersion,
+    reports: [...board.reports.filter(({ id }) => !previousSampleIds.has(id)), ...sampleReports]
+      .sort((a, b) => b.submittedAt - a.submittedAt),
+    sitReps: [...board.sitReps, ...sampleSitReps].sort((a, b) => b.createdAt - a.createdAt),
+  };
+}
 
 function openDatabase() {
   return new Promise((resolve, reject) => {
@@ -23,10 +36,10 @@ export async function accessReportBoard(update) {
       let updateError;
 
       request.onsuccess = () => {
-        board = request.result ?? initialBoard;
+        board = withSampleReports(request.result);
         if (update) {
           try {
-            board = { ...update(board), version: board.version + 1 };
+            board = { ...board, ...update(board), version: board.version + 1 };
             store.put(board, 'current');
           } catch (error) {
             updateError = error;

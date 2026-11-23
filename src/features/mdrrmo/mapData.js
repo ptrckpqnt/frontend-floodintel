@@ -18,16 +18,12 @@ export function canMap(report) {
   return hasCoordinates(report) && Number.isFinite(report.waterLevelCm) && report.waterLevelCm >= 0;
 }
 
-export function project({ latitude, longitude }, zoom) {
-  const size = 256 * 2 ** zoom;
-  const radians = Math.max(-85.05112878, Math.min(85.05112878, latitude)) * Math.PI / 180;
-  return {
-    x: (longitude + 180) / 360 * size,
-    y: (1 - Math.asinh(Math.tan(radians)) / Math.PI) / 2 * size,
-  };
-}
-
 export function reportsInWindow(reports, hours, now) {
   return hours ? reports.filter(({ submittedAt }) =>
     Number.isFinite(submittedAt) && submittedAt <= now && submittedAt >= now - hours * 3600000) : reports;
+}
+
+export function endorsedReports({ reports, sitReps }) {
+  const includedIds = new Set(sitReps.flatMap(({ reportIds }) => reportIds ?? []));
+  return reports.filter(({ id }) => includedIds.has(id));
 }
