@@ -2,9 +2,14 @@ import React from 'react';
 import AccountAvatar from './AccountAvatar';
 
 const icons = {
+  menu: 'M4 6h16M4 12h16M4 18h16',
+  back: 'M19 12H5m6-6-6 6 6 6',
+  close: 'M6 6l12 12M18 6 6 18',
   map: 'M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3z M9 3v15 M15 6v15',
-  analytics: 'M4 4v16h17 M8 16v-4 M13 16V8 M18 16V5',
-  sidebar: 'M3 4h18v16H3z M9 4v16',
+  priority: 'M4 20V4m0 1h15l-3 4 3 4H4',
+  sidebarCollapse: 'M3 4h18v16H3z M9 4v16 M16 8l-4 4 4 4',
+  sidebarExpand: 'M3 4h18v16H3z M9 4v16 M12 8l4 4-4 4',
+  logout: 'M11 4H4v16h7 M9 12h12 M17 8l4 4-4 4',
   inbox: 'M3 13l3-7h12l3 7v6H3z M3 13h5l2 3h4l2-3h5',
   team: 'M15 20v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2 M13 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0 M17 4a4 4 0 0 1 0 8 M17 14a4 4 0 0 1 4 4v2',
   send: 'M22 2 9 15 M22 2l-7 20-6-7-7-6z',
@@ -30,29 +35,43 @@ export function Icon({ name }) {
     strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={icons[name]} /></svg>;
 }
 
-export default function WorkspaceSidebar({ account, avatarLetters, navigation, screen, navigate, mobileSubmitLabel, onSignOut, id }) {
-  return <aside className="reporter-sidebar" id={id}>
-      <div className="reporter-brand">
-        <span aria-hidden="true">
+export function WorkspaceBrand({ collapsed = false, onToggle, sidebarId }) {
+  return <div className="reporter-brand">
+        {!collapsed && <><span className="reporter-brand-logo" aria-hidden="true">
           <svg viewBox="0 0 32 32">
             <path fill="#073263" d="M4 15C4 9 8 4 14 4h15c-1 4-3 6-7 6h-8c-4 0-7 2-10 5Z" />
             <path fill="#008de9" d="M4 24c0-7 5-12 11-12h11c-1 4-3 6-7 6h-6c-3 0-6 2-9 6Z" />
             <path fill="#0056ae" d="M4 26c0-4 3-7 8-8v5c0 4-3 7-8 7Z" />
           </svg>
         </span>
-        <strong className="reporter-brand-name">FloodIntel</strong>
-      </div>
+        <strong className="reporter-brand-name">FloodIntel</strong></>}
+        {onToggle && <button type="button" className="municipal-sidebar-toggle" aria-expanded={!collapsed} aria-controls={sidebarId}
+          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} onClick={onToggle}>
+          <Icon name={collapsed ? 'sidebarExpand' : 'sidebarCollapse'} />
+        </button>}
+      </div>;
+}
+
+export default function WorkspaceSidebar({ account, avatarLetters, navigation, screen, navigate, mobileSubmitLabel, accountMenu, subnavigation, id, collapsed = false, onToggle, showBrand = true }) {
+  return <aside className="reporter-sidebar" id={id}>
+      {showBrand && <WorkspaceBrand collapsed={collapsed} onToggle={onToggle} sidebarId={id} />}
       <nav className="reporter-nav" aria-label={account.role}>
-        {navigation.map(([id, label]) => <button key={id} type="button" className={`reporter-nav-${id}`}
-          aria-current={screen === id ? 'page' : undefined} onClick={() => navigate(id)}>
-          <span className="reporter-nav-icon"><Icon name={id} />{id === 'submit' && mobileSubmitLabel && <Icon name="camera" />}</span>
-          <span className="reporter-nav-label">{id === 'submit' ? mobileSubmitLabel : label}</span>
-        </button>)}
+        {navigation.map(([id, label]) => {
+          const submenu = subnavigation?.[id];
+          const item = <button key={id} type="button" className={`reporter-nav-${id}`}
+            aria-current={screen === id ? 'page' : undefined} onClick={() => navigate(id)}>
+            <span className="reporter-nav-icon"><Icon name={id} />{id === 'submit' && mobileSubmitLabel && <Icon name="camera" />}</span>
+            <span className="reporter-nav-label">{id === 'submit' ? mobileSubmitLabel : label}</span>
+          </button>;
+          return submenu ? <div className="reporter-nav-section" key={id}>
+            <div className="reporter-nav-row">{item}{submenu.control}</div>
+            {submenu.content}
+          </div> : item;
+        })}
       </nav>
-      <div className="reporter-sidebar-account">
+      {accountMenu ?? <div className="reporter-sidebar-account">
         <AccountAvatar account={account} className="reporter-sidebar-initial" letters={avatarLetters} />
         <div><strong>{account.fullName}</strong><small>{account.role}</small></div>
-      </div>
-      {onSignOut && <button type="button" className="reporter-text-button municipal-sign-out" onClick={onSignOut}>Sign out</button>}
+      </div>}
     </aside>;
 }

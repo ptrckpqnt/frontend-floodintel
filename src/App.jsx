@@ -47,7 +47,7 @@ export default function App() {
 
   if (account && token === null) {
     if (account.role === 'MDRRMO Officer') {
-      return <MunicipalWorkspace key={account.id} account={account} onSignOut={handleSignOut}
+      return <MunicipalWorkspace key={account.id} account={account} onSignOut={handleSignOut} onAccountUpdated={setAccount}
         reports={endorsedReports(board)} loadError={loadError} />;
     }
     return <>

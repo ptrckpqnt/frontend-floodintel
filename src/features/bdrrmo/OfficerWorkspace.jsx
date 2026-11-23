@@ -111,7 +111,11 @@ export default function OfficerWorkspace({ account, onSignOut, onAccountUpdated,
       if (!selected.length || selected.length !== reportIds.length) {
         throw new Error('The selected reports are no longer available. Check your selection and try again.');
       }
-      const reference = String(591673 + current.sitReps.length);
+      const lastReference = current.sitReps.reduce((highest, entry) => {
+        const number = Number(entry.reference);
+        return Number.isSafeInteger(number) ? Math.max(highest, number) : highest;
+      }, 591672);
+      const reference = String(lastReference + 1);
       const entry = { ...summary, id, reference, reportIds, createdAt: Date.now(), author: account.fullName, barangay: account.barangay };
       return {
         reports: current.reports.map((report) => reportIds.includes(report.id) ? { ...report, status: 'In SitRep' } : report),

@@ -4,7 +4,7 @@ import { depthBands } from './mapData';
 const MapboxDepthMap = lazy(() => import('./MapboxDepthMap'));
 const publicToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN?.trim();
 
-export default function FloodDepthMap(props) {
+export default function FloodDepthMap({ loadButtonRef, ...props }) {
   const [requested, setRequested] = useState(false);
   const tokenReady = publicToken?.startsWith('pk.');
 
@@ -20,7 +20,7 @@ export default function FloodDepthMap(props) {
       </div>
     </> : <div className="municipal-map-placeholder">
       <strong>Apalit, Pampanga</strong>
-      <button type="button" className="reporter-primary" onClick={() => setRequested(true)}>Load map</button>
+      <button type="button" className="reporter-primary" ref={loadButtonRef} onClick={() => setRequested(true)}>Load map</button>
       {requested ? <p role="alert">Set a public <code>VITE_MAPBOX_ACCESS_TOKEN</code> in <code>.env.local</code>, then restart Vite.</p>
         : <p>The map stays off until you load it.</p>}
     </div>}

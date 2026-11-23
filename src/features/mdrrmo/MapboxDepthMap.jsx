@@ -23,7 +23,7 @@ function reportPoints(reports) {
   };
 }
 
-export default function MapboxDepthMap({ accessToken, reports, selected, onSelect, theme }) {
+export default function MapboxDepthMap({ accessToken, reports, selected, onSelect, theme, focusRequest }) {
   const container = useRef(null);
   const instance = useRef(null);
   const latest = useRef({ reports, onSelect });
@@ -102,7 +102,7 @@ export default function MapboxDepthMap({ accessToken, reports, selected, onSelec
       const map = instance.current;
       map.easeTo({ center: [selected.longitude, selected.latitude], zoom: Math.max(map.getZoom(), 16) });
     }
-  }, [ready, selected]);
+  }, [ready, selected, focusRequest]);
 
   return <>
     <div ref={container} className="municipal-map-surface" />

@@ -56,7 +56,7 @@ function readAccount(account) {
 }
 
 function accountProfile({ id, fullName, email, phone, role, avatarColor }) {
-  return { id, fullName, email, phone, role, avatarColor, barangay: role === 'MDRRMO Officer' ? 'Paligui' : demoBarangay };
+  return { id, fullName, email, phone, role, avatarColor, barangay: role === 'MDRRMO Officer' ? 'Apalit' : demoBarangay };
 }
 
 function normalizePhone(phone) {
@@ -125,6 +125,11 @@ function requireOfficer() {
 export function listFieldReporters() {
   requireOfficer();
   return activeAccounts().map(readAccount).filter(({ role }) => role === 'Field Reporter').map(accountProfile);
+}
+
+export function listBarangayOfficers() {
+  if (getSignedInAccount()?.role !== 'MDRRMO Officer') return [];
+  return activeAccounts().map(readAccount).filter(({ role }) => role === 'BDRRM Officer').map(accountProfile);
 }
 
 export async function createFieldReporter({ fullName, email, phone, password }) {

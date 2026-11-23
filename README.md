@@ -11,7 +11,7 @@ The React demo opens with the authentication flow from the Figma draft. Signing 
 - `src/styles/base.css` contains shared page and form styles. The authentication and Field Reporter styles live with their features.
 
 - `src/features/bdrrmo/` contains the BDRRM Officer dashboard and its demo views.
-- `src/features/mdrrmo/` contains the municipal map, location reports, and operational analytics.
+- `src/features/mdrrmo/` contains the municipal map, location reports, and Priority views.
 - `src/components/WorkspaceSidebar.jsx` provides shared navigation and branding.
 
 ## Open in VS Code
@@ -47,7 +47,7 @@ Sample sign-in and password changes are stored in the browser by account. Clear 
 
 ## Try the MDRRMO workspace
 
-Sign in with the MDRRMO demo account using mobile number `09000000005` and its demo password. Submit a synthetic Field Reporter report with GPS coordinates, then use the BDRRMO account to accept it and include it in a SitRep endorsed to MDRRMO. Switch to the MDRRMO account at the same site address in the same browser to see the report on the map and in Location Reports. Endorsed reports without coordinates appear in Location Reports and are flagged in Analytics.
+Sign in with the MDRRMO demo account using mobile number `09000000005` and its demo password. Submit a synthetic Field Reporter report with GPS coordinates, then use the BDRRMO account to accept it and include it in a SitRep endorsed to MDRRMO. Switch to the MDRRMO account at the same site address in the same browser to see the report on the map and in Location Reports. The Priority view highlights evacuation needs, reported vulnerable residents, and the deepest reported locations.
 
 To enable the map, copy `.env.example` to `.env.local` in the project root and set `VITE_MAPBOX_ACCESS_TOKEN` to a public Mapbox token starting with `pk.`. Restart Vite after editing the file. In Windows PowerShell, run `npm.cmd run dev` and open the local address it prints. Sign in as MDRRMO and select **Load map**. Mapbox initializes only after that click. The map opens over Apalit with a **Sample marker** and shows depth for endorsed reports with GPS coordinates.
 
