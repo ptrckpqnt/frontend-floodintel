@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { updateReporterProfile } from './authService';
+import { updateReporterProfile } from '../auth/authService';
 
 export default function EditReporterProfile({ reporter, onSaved, onCancel }) {
   const [saving, setSaving] = useState(false);
