@@ -11,7 +11,8 @@ The React demo opens with the authentication flow from the Figma draft. Signing 
 - `src/styles/base.css` contains shared page and form styles. The authentication and Field Reporter styles live with their features.
 
 - `src/features/bdrrmo/` contains the BDRRM Officer dashboard and its demo views.
-- `src/components/WorkspaceSidebar.jsx` provides the navigation and branding used by both workspaces.
+- `src/features/mdrrmo/` contains the municipal map, location reports, and operational analytics.
+- `src/components/WorkspaceSidebar.jsx` provides shared navigation and branding.
 
 ## Open in VS Code
 
@@ -43,6 +44,12 @@ Sample sign-in and password changes are stored in the browser by account. Clear 
 - Enter water level and affected households, choose a sample image, and capture location.
 - Turn on **Simulate a server failure**, submit, and check the error. Turn it off and retry. The confirmation is a demo response.
 - Use synthetic data. The demo service does not upload the image or coordinates.
+
+## Try the MDRRMO workspace
+
+Sign in with the MDRRMO demo account using mobile number `09000000005` and its demo password. Submit a synthetic Field Reporter report with GPS coordinates, then switch to the MDRRMO account at the same site address in the same browser. The new report appears on the map and in Location Reports. Reports without coordinates are still available in Location Reports and are flagged in Analytics.
+
+The heat layer visualizes measured report points. The basemap requires an internet connection. The demo uses OpenStreetMap tiles by default, with an optional `VITE_MAP_TILE_URL` template containing `{z}`, `{x}`, and `{y}` for another OpenStreetMap-derived provider. Shared reporting across devices requires a backend.
 
 The offline queue, connection indicator, PWA installation, hosting, and Laravel integration are later milestones. See [FloodIntel-Frontend-Plan.md](FloodIntel-Frontend-Plan.md).
 

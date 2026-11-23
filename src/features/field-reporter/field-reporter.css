@@ -16,6 +16,7 @@
   background: linear-gradient(120deg, #0644ba, #063580);
   color: white;
 }
+.reporter-brand-name { font: inherit; }
 .reporter-heading h1 { margin: 3px 0; font-size: 1.35rem; }
 .reporter-heading p { margin: 0; color: #b8d9ff; font-size: .8rem; }
 .reporter-home-body, .reporter-inner { padding: 16px; }

@@ -1,5 +1,6 @@
 // Client-side fixtures for the demo. Laravel will own production authentication.
 const accounts = [
+  { fullName: 'Cesar Carlos', email: 'cesarcarlos@gmail.com', phone: '09000000005', role: 'MDRRMO Officer', initialHash: '925a44115c8907538941dbde555e8e94226b66307b761049c5221e9d7b573286' },
   { fullName: 'Mark Jason Patron', email: 'markjasonpatron@gmail.com', phone: '09000000001', initialHash: '332380e74195a60f4df62aef6b1869540492112ab00217322ede4dea1926dbcc' },
   { fullName: 'Patrick Pioquinto', email: 'patrickpioquinto@gmail.com', phone: '09000000004', role: 'BDRRM Officer', initialHash: 'c5f71e11073a7245bb5ce15fcb72a9d66a069e5e0bb1d6790dd95344ab8e66b2' },
   { fullName: 'Aljon Ken Fernandez', email: 'aljonkenfernandez@gmail.com', phone: '09000000003', initialHash: '5e2c3e9e303da226b679cb0b67fa008055654c3121a5cdd0810c7e3c5aa3edd4' },
@@ -56,7 +57,9 @@ function accountProfile({ id, fullName, email, phone, role, avatarColor }) {
 }
 
 function normalizePhone(phone) {
-  return phone.trim().replace(/^\+63(?=9)/, '0');
+  const value = phone.trim();
+  if (!/^\+?[\d\s()-]+$/.test(value)) return value;
+  return value.replace(/[\s()-]/g, '').replace(/^\+63(?=9)/, '0');
 }
 
 export function getSignedInAccount() {
@@ -71,6 +74,9 @@ export function signOut() {
 }
 
 async function digest(password) {
+  if (!globalThis.crypto?.subtle) {
+    throw new Error('Open FloodIntel over HTTPS or use http://localhost to sign in.');
+  }
   const bytes = new TextEncoder().encode(password);
   const hash = await crypto.subtle.digest('SHA-256', bytes);
   return Array.from(new Uint8Array(hash), (byte) => byte.toString(16).padStart(2, '0')).join('');
