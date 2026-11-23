@@ -4,6 +4,7 @@ import WorkspaceHeader from '../../components/WorkspaceHeader';
 import MdrrmoHotlineLink from '../../components/MdrrmoHotlineLink';
 import OfficerInbox, { inboxStatuses } from './OfficerInbox';
 import OfficerReportReview from './OfficerReportReview';
+import OfficerTeam from './OfficerTeam';
 import sampleFloodEvidence from './sample-flood-evidence.jpg';
 import './officer.css';
 
@@ -83,7 +84,6 @@ export default function OfficerWorkspace({ account, onSignOut }) {
   const [selectedId, setSelectedId] = useState(null);
   const [editingDraft, setEditingDraft] = useState(false);
   const [draft, setDraft] = useState('');
-  const initials = account.fullName.trim().split(/\s+/).map((name) => name[0]).slice(0, 2).join('');
   const selected = reports.find((report) => report.id === selectedId);
   const sent = reports.filter((report) => report.tone === 'sent');
 
@@ -122,14 +122,15 @@ export default function OfficerWorkspace({ account, onSignOut }) {
 
   const title = screen === 'home' ? 'Dashboard' : navigation.find(([id]) => id === screen)[1];
   return <div className="reporter-workspace officer-workspace">
-    <WorkspaceSidebar account={account} initials={initials} navigation={navigation} screen={screen} navigate={navigate} />
+    <WorkspaceSidebar account={account} avatarLetters={2} navigation={navigation} screen={screen} navigate={navigate} />
     <main className="reporter-main">
       {screen === 'inbox' && <OfficerInbox reports={reports} barangay={account.barangay} status={inboxStatus}
         onStatusChange={setInboxStatus} selected={selected} onSelect={selectReport} />}
       {screen === 'inbox' && selected && <OfficerReportReview key={selected.id} report={selected}
         onBack={() => selectReport(null)} onDecision={recordDecision} />}
       {screen !== 'inbox' && <>
-        <WorkspaceHeader account={account} title={screen === 'home' ? undefined : title} />
+        <WorkspaceHeader account={account} title={screen === 'team' ? 'Manage Team' : screen === 'home' ? undefined : title}
+          subtitle={screen === 'team' ? 'Field reporters' : undefined} />
         <div className="reporter-home-body">
           {screen === 'home' && <Dashboard reports={reports} onInbox={openInbox} onSelect={openReport} onNewSitRep={newSitRep} />}
           {selected && <section className="reporter-card officer-panel">
@@ -151,10 +152,7 @@ export default function OfficerWorkspace({ account, onSignOut }) {
               <small>Draft is available until you reload or sign out.</small>
             </div> : <ReportList items={sent} onSelect={selectReport} />}
           </section>}
-          {screen === 'team' && <section className="reporter-card officer-panel">
-            <h2>Field Reporters</h2>
-            <ul>{[...new Set(reports.map((report) => report.reporter))].sort().map((name) => <li key={name}>{name}</li>)}</ul>
-          </section>}
+          {screen === 'team' && <OfficerTeam account={account} />}
           {screen === 'profile' && <section className="reporter-card officer-panel">
             <h2>{account.fullName}</h2>
             <dl className="officer-profile">

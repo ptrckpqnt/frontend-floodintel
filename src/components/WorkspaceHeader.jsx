@@ -1,8 +1,8 @@
 import React from 'react';
 
-export default function WorkspaceHeader({ account, title = account.fullName }) {
+export default function WorkspaceHeader({ account, title = account.fullName, subtitle = account.role }) {
   return <header className="reporter-heading">
     <h1>{title}</h1>
-    <p>{account.role} · Brgy. {account.barangay}</p>
+    <p>{subtitle} · Brgy. {account.barangay}</p>
   </header>;
 }
