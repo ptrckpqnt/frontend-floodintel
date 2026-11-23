@@ -6,6 +6,8 @@ import MdrrmoHotlineLink from '../../components/MdrrmoHotlineLink';
 import OfficerInbox, { inboxStatuses } from './OfficerInbox';
 import OfficerReportReview from './OfficerReportReview';
 import OfficerTeam from './OfficerTeam';
+import { NewSitRep, SitRepList } from './OfficerSitReps';
+import { summarizeReports } from './sitRepSummary';
 import sampleFloodEvidence from './sample-flood-evidence.jpg';
 import './officer.css';
 
@@ -14,15 +16,22 @@ const sampleReports = [
   { id: 'san-vicente-new', location: 'San Vicente Apalit', reporter: 'Aljon Ken Fernandez', time: 'Just now',
     dateLabel: 'Jun 24, 01:23 AM', waterLevel: 'Waist-deep (50–100 cm)', status: 'Awaiting Review', tone: 'waiting',
     reference: '393272', photoUrl: sampleFloodEvidence, phone: '09000000003', landmark: 'Villena St.', coordinates: [14.94514, 120.78503],
-    waterFlow: 'Very fast (dangerous current)', affectedFamilies: '34 families', description: 'We need immediate response action.',
+    waterLevelRank: 3, waterFlow: 'Very fast (dangerous current)', affectedFamilies: 34, description: 'We need immediate response action.',
     evacuation: 'Yes', boat: 'No', vulnerable: 'Multiple' },
   { id: 'san-vicente-accepted', location: 'San Vicente Apalit', reporter: 'Aljon Ken Fernandez', time: '11 min ago',
     dateLabel: 'Jun 24, 01:13 AM', waterLevel: 'Waist-deep (50–100 cm)', status: 'Accepted', tone: 'accepted',
-    reference: '393271', phone: '09000000003' },
+    reference: '393271', phone: '09000000003', waterLevelRank: 3, waterFlow: 'Fast', affectedFamilies: 34,
+    evacuation: 'Yes', vulnerable: 'Multiple', description: 'Floodwater has entered homes along Villena Street.' },
   { id: 'aroma', location: 'Aroma Street', reporter: 'Mark Jason Patron', time: '2 hr ago',
     dateLabel: 'Jun 23, 10:47 PM', waterLevel: 'Waist-deep (50–100 cm)', status: 'Sent to MDRRMO', tone: 'sent',
-    reference: '393270', phone: '09000000001' },
+    reference: '393270', phone: '09000000001', waterLevelRank: 3, affectedFamilies: 11, evacuation: 'No' },
 ];
+const sampleSitReps = [{
+  id: 'sample-sitrep', reference: '591673', createdAt: Date.parse('2026-06-24T01:09:00+08:00'),
+  author: 'Patrick Pioquinto', barangay: 'Paligui', narrative: 'Flooding was reported on Aroma Street.',
+  reportIds: ['aroma'],
+  ...summarizeReports(sampleReports.filter(({ tone }) => tone === 'sent')),
+}];
 
 function ReportList({ items, onSelect }) {
   return <ul className="reporter-report-list officer-reports">
@@ -36,13 +45,13 @@ function ReportList({ items, onSelect }) {
   </ul>;
 }
 
-function Dashboard({ reports, onInbox, onSelect, onNewSitRep }) {
+function Dashboard({ reports, sentCount, onInbox, onSelect, onNewSitRep }) {
   const pendingCount = reports.filter((report) => report.tone === 'waiting').length;
   const stats = [
     ['waiting', 'waiting', 'Pending Review', pendingCount],
     ['accepted', 'accepted', 'Accepted Reports', reports.filter((report) => report.tone === 'accepted').length],
     ['reports', 'inbox', 'Total Inbox', reports.length],
-    ['calendar', 'send', 'SitReps Sent', reports.filter((report) => report.tone === 'sent').length],
+    ['calendar', 'send', 'SitReps Sent', sentCount],
   ];
 
   return <>
@@ -79,14 +88,13 @@ function Dashboard({ reports, onInbox, onSelect, onNewSitRep }) {
 }
 
 export default function OfficerWorkspace({ account, onSignOut, onAccountUpdated }) {
-  const [reports, setReports] = useState(sampleReports);
+  const [{ reports, sitReps }, setOfficerData] = useState({ reports: sampleReports, sitReps: sampleSitReps });
   const [screen, setScreen] = useState('home');
   const [inboxStatus, setInboxStatus] = useState('');
   const [selectedId, setSelectedId] = useState(null);
   const [editingDraft, setEditingDraft] = useState(false);
-  const [draft, setDraft] = useState('');
+  const [endorsementMessage, setEndorsementMessage] = useState('');
   const selected = reports.find((report) => report.id === selectedId);
-  const sent = reports.filter((report) => report.tone === 'sent');
 
   function selectReport(report) {
     setSelectedId(report?.id ?? null);
@@ -94,15 +102,19 @@ export default function OfficerWorkspace({ account, onSignOut, onAccountUpdated 
   }
 
   function recordDecision(id, tone, reviewNote) {
-    setReports((current) => current.map((report) => report.id === id && report.tone === 'waiting'
-      ? { ...report, tone, status: inboxStatuses[tone], reviewNote }
-      : report));
+    setOfficerData((current) => ({
+      ...current,
+      reports: current.reports.map((report) => report.id === id && report.tone === 'waiting'
+        ? { ...report, tone, status: inboxStatuses[tone], reviewNote }
+        : report),
+    }));
   }
 
   function navigate(nextScreen) {
     setSelectedId(null);
     setInboxStatus('');
     setEditingDraft(false);
+    setEndorsementMessage('');
     setScreen(nextScreen);
   }
 
@@ -119,9 +131,24 @@ export default function OfficerWorkspace({ account, onSignOut, onAccountUpdated 
   function newSitRep() {
     navigate('reports');
     setEditingDraft(true);
+    window.scrollTo(0, 0);
   }
 
-  const title = screen === 'home' ? 'Dashboard' : navigation.find(([id]) => id === screen)[1];
+  function endorseSitRep(reportIds, summary) {
+    const id = crypto.randomUUID();
+    const reference = String(591674 + sitReps.length - sampleSitReps.length);
+    const entry = { ...summary, id, reference, reportIds, createdAt: Date.now(), author: account.fullName, barangay: account.barangay };
+    setOfficerData((current) => ({
+      reports: current.reports.map((report) => reportIds.includes(report.id)
+        ? { ...report, tone: 'sent', status: 'Sent to MDRRMO' }
+        : report),
+      sitReps: [entry, ...current.sitReps],
+    }));
+    setEndorsementMessage(`SitRep #${reference} endorsed in this demo session.`);
+    setEditingDraft(false);
+    window.scrollTo(0, 0);
+  }
+
   return <div className="reporter-workspace officer-workspace">
     <WorkspaceSidebar account={account} avatarLetters={2} navigation={navigation} screen={screen} navigate={navigate} />
     <main className="reporter-main">
@@ -131,30 +158,16 @@ export default function OfficerWorkspace({ account, onSignOut, onAccountUpdated 
         onBack={() => selectReport(null)} onDecision={recordDecision} />}
       {screen === 'profile' && <WorkspaceProfile account={account} onSignOut={onSignOut}
         onAccountUpdated={onAccountUpdated} avatarLetters={2} />}
-      {screen !== 'inbox' && screen !== 'profile' && <>
-        <WorkspaceHeader account={account} title={screen === 'team' ? 'Manage Team' : screen === 'home' ? undefined : title}
+      {screen === 'reports' && (editingDraft
+        ? <NewSitRep reports={reports.filter(({ tone }) => tone === 'accepted')} account={account}
+          onBack={() => navigate('reports')} onEndorse={endorseSitRep} />
+        : <SitRepList sitReps={sitReps} barangay={account.barangay} onCreate={newSitRep} message={endorsementMessage} />)}
+      {(screen === 'home' || screen === 'team') && <>
+        <WorkspaceHeader account={account} title={screen === 'team' ? 'Manage Team' : undefined}
           subtitle={screen === 'team' ? 'Field reporters' : undefined} />
         <div className="reporter-home-body">
-          {screen === 'home' && <Dashboard reports={reports} onInbox={openInbox} onSelect={openReport} onNewSitRep={newSitRep} />}
-          {selected && <section className="reporter-card officer-panel">
-            <button type="button" className="reporter-text-button" onClick={() => selectReport(null)}>Back to {title}</button>
-            <h2>{selected.location}</h2>
-            <p>{selected.reporter} · {selected.time}</p>
-            <span className="reporter-status" data-tone={selected.tone}>{selected.status}</span>
-          </section>}
-          {screen === 'reports' && !selected && <section className="reporter-card officer-panel">
-            <div className="reporter-card-heading">
-              <h2>{editingDraft ? 'New SitRep' : 'Sent to MDRRMO'}</h2>
-              <button type="button" className="reporter-text-button" onClick={() => setEditingDraft(!editingDraft)}>
-                {editingDraft ? 'View Sent' : draft ? 'Resume Draft' : 'New SitRep'}
-              </button>
-            </div>
-            {editingDraft ? <div className="officer-draft">
-              <label htmlFor="sitrep-summary">Situation summary</label>
-              <textarea id="sitrep-summary" rows={6} value={draft} onChange={(event) => setDraft(event.target.value)} />
-              <small>Draft is available until you reload or sign out.</small>
-            </div> : <ReportList items={sent} onSelect={selectReport} />}
-          </section>}
+          {screen === 'home' && <Dashboard reports={reports} sentCount={sitReps.length}
+            onInbox={openInbox} onSelect={openReport} onNewSitRep={newSitRep} />}
           {screen === 'team' && <OfficerTeam account={account} />}
         </div>
       </>}

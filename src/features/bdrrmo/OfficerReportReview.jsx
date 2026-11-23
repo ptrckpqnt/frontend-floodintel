@@ -71,7 +71,7 @@ export default function OfficerReportReview({ report, onBack, onDecision }) {
           <h2><Icon name="inbox" /> Flood Information</h2>
           <ReviewFields fields={ [
             ['Flood Level', report.waterLevel], ['Water Flow', report.waterFlow],
-            ['Affected Families', report.affectedFamilies], ['Description', report.description],
+            ['Affected Families', report.affectedFamilies == null ? null : `${report.affectedFamilies} families`], ['Description', report.description],
           ] } />
         </section>
         <section className="reporter-card officer-review-card">

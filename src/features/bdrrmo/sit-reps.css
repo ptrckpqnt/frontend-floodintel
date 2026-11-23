@@ -1,0 +1,79 @@
+.sitrep-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.sitrep-header h1 { margin: 0 0 3px; font-size: 1.2rem; }
+.sitrep-header .reporter-primary { width: auto; min-height: 40px; }
+.sitrep-header .reporter-primary:hover { background: #0047ba; }
+.sitrep-header .officer-review-back + div { flex: 1; }
+.sitrep-list, .sitrep-form { display: grid; gap: 16px; align-items: start; }
+.sitrep-card, .sitrep-form > section { min-width: 0; overflow-wrap: anywhere; }
+.sitrep-form h2, .sitrep-meta { display: flex; align-items: center; gap: 6px; }
+.sitrep-form h2 svg, .sitrep-card .sitrep-meta svg { width: 15px; height: 15px; }
+.sitrep-card .sitrep-meta { margin: 7px 0; font-size: .83rem; flex-wrap: wrap; }
+.sitrep-card .sitrep-meta strong { color: #101827; }
+.sitrep-card .sitrep-flag svg { color: #b34600; }
+.sitrep-card .sitrep-byline { margin-bottom: 0; font-size: .72rem; }
+.sitrep-metrics { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 7px; margin: 16px 0 10px; }
+.sitrep-metrics > div, .sitrep-narrative { padding: 9px 10px; border-radius: 8px; background: #f6f7f9; }
+.sitrep-metrics > div { min-width: 0; }
+.sitrep-card .sitrep-metrics { text-align: center; }
+.sitrep-metrics dt, .sitrep-narrative small { color: #536479; font-size: .73rem; }
+.sitrep-metrics dd { margin: 2px 0 0; color: #005cf5; font-weight: 700; }
+.sitrep-metrics > div:nth-child(2) dd { color: #a9261e; }
+.sitrep-metrics > div:nth-child(3) dd { color: #087b40; }
+.sitrep-summary .sitrep-metrics > div:nth-child(2) dd { font-size: .86rem; }
+.sitrep-narrative { margin-top: 10px; font-size: .84rem; white-space: pre-wrap; }
+.sitrep-options { display: grid; gap: 7px; margin: 0; padding: 0; list-style: none; }
+.sitrep-options li { position: relative; border: 1px solid var(--reporter-border); border-radius: 8px; }
+.sitrep-options li[data-selected="true"] { border-color: #6ea8ff; background: #edf5ff; }
+.sitrep-option label { display: flex; align-items: center; gap: 8px; margin: 0; padding: 9px 38px 9px 10px; cursor: pointer; font-size: .85rem; }
+.sitrep-option input { flex: none; accent-color: #005cf5; }
+.sitrep-option strong, .sitrep-option small { display: block; }
+.sitrep-option small { color: #536479; font-weight: 400; }
+.sitrep-options details { font-size: .78rem; color: #536479; }
+.sitrep-options details[open] { display: grid; gap: 3px; padding: 8px 12px; border-top: 1px solid var(--reporter-border); }
+.sitrep-options summary { position: absolute; top: 7px; right: 5px; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 6px; cursor: pointer; list-style: none; }
+.sitrep-options summary::-webkit-details-marker { display: none; }
+.sitrep-options summary:hover { background: #dceaff; }
+.sitrep-options summary svg { width: 15px; height: 15px; transform: rotate(90deg); }
+.sitrep-options details[open] summary svg { transform: rotate(-90deg); }
+.sitrep-summary label { margin: 12px 0 4px; font-size: .84rem; }
+.sitrep-form input:not([type="checkbox"]), .sitrep-form textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: #f0f1f3;
+  color: #101827;
+  font: inherit;
+  font-size: .84rem;
+}
+.sitrep-form textarea { display: block; resize: vertical; }
+.sitrep-compose > small { display: block; margin-top: 8px; color: #536479; }
+.sitrep-flags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.sitrep-flags span { padding: 3px 6px; border-radius: 6px; background: #fff0df; color: #874000; font-size: .72rem; }
+.sitrep-preview, .sitrep-message { padding: 12px; border: 1px solid #b3d6ff; border-radius: 8px; background: #edf5ff; color: #0848b5; }
+.sitrep-preview { margin-top: 12px; }
+.sitrep-preview h3 { margin: 0 0 6px; font-size: .87rem; }
+.sitrep-compose .sitrep-preview p { margin: 3px 0; font-size: .76rem; color: inherit; }
+.sitrep-compose .sitrep-endorse { min-height: 42px; margin-top: 12px; background: #101827; }
+.sitrep-compose .sitrep-endorse:hover:not(:disabled) { background: #233553; }
+.sitrep-compose .error { color: #96251e; }
+.sitrep-message { margin-top: 0; }
+
+@media (min-width: 900px) {
+  .sitrep-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sitrep-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (min-width: 1150px) {
+  .sitrep-form { grid-template-columns: minmax(0, 1.12fr) minmax(0, .85fr) minmax(0, 1fr); }
+  .sitrep-form .sitrep-summary, .sitrep-form .sitrep-compose { align-self: stretch; }
+}
