@@ -1,4 +1,5 @@
 import React from 'react';
+import AccountAvatar from './AccountAvatar';
 
 const icons = {
   inbox: 'M3 13l3-7h12l3 7v6H3z M3 13h5l2 3h4l2-3h5',
@@ -26,7 +27,7 @@ export function Icon({ name }) {
     strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={icons[name]} /></svg>;
 }
 
-export default function WorkspaceSidebar({ account, initials, navigation, screen, navigate, mobileSubmitLabel }) {
+export default function WorkspaceSidebar({ account, avatarLetters, navigation, screen, navigate, mobileSubmitLabel }) {
   return <aside className="reporter-sidebar">
       <div className="reporter-brand">
         <span aria-hidden="true">
@@ -46,7 +47,7 @@ export default function WorkspaceSidebar({ account, initials, navigation, screen
         </button>)}
       </nav>
       <div className="reporter-sidebar-account">
-        <span className="reporter-sidebar-initial" aria-hidden="true">{initials ?? account.fullName[0]}</span>
+        <AccountAvatar account={account} className="reporter-sidebar-initial" letters={avatarLetters} />
         <div><strong>{account.fullName}</strong><small>{account.role}</small></div>
       </div>
     </aside>;

@@ -1,0 +1,70 @@
+.officer-team-layout,
+.officer-team-side,
+.officer-team-members { display: grid; gap: 14px; align-content: start; }
+
+.officer-team-lead,
+.officer-team-member summary,
+.officer-team-roster h2 { display: flex; align-items: center; gap: 10px; }
+
+.officer-team-layout .officer-team-lead {
+  padding: 10px 14px;
+  border-color: #b3d6ff;
+  background: #edf5ff;
+  color: #0848b5;
+}
+.officer-team-layout .officer-team-lead p { margin: 0; color: inherit; }
+.officer-team-avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  font-size: .8rem;
+  font-weight: 750;
+}
+.officer-team-roster h2 svg,
+.officer-team-chevron svg { width: 16px; height: 16px; }
+.officer-team-side > .reporter-primary { min-height: 44px; }
+.officer-team-layout .reporter-primary:hover { background: #0047ba; }
+
+.officer-team-layout .officer-team-form { border-color: #b3d6ff; }
+.officer-team-form fieldset { gap: 10px; }
+.officer-team-form label { margin: 0; color: #101827; font-size: .84rem; }
+.officer-team-form input:not([type="checkbox"]) {
+  margin-top: 4px;
+  padding: 7px 10px;
+  border-color: transparent;
+  background: #f0f1f3;
+  font-weight: 400;
+}
+.officer-team-form input[readonly] { color: #536479; }
+.officer-team-form .error, .officer-team-roster .error { margin: 0; color: #96251e; }
+.officer-team-form-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.officer-team-form-actions button { width: 100%; padding: 7px; font-size: .82rem; }
+.officer-team-form-actions button[type="button"] { border-color: var(--reporter-border); background: white; color: #101827; }
+.officer-team-form-actions button[type="button"]:hover { background: #edf5ff; }
+
+.officer-team-roster h2 span { padding: 1px 7px; border-radius: 7px; background: #e0eeff; color: #0848b5; font-size: .75rem; }
+.officer-team-members { gap: 8px; }
+.officer-team-member { min-width: 0; border: 1px solid var(--reporter-border); border-radius: 9px; }
+.officer-team-member[open] { border-color: #6ea8ff; }
+.officer-team-member summary { padding: 12px; list-style: none; cursor: pointer; border-radius: 8px; overflow-wrap: anywhere; }
+.officer-team-member summary::-webkit-details-marker { display: none; }
+.officer-team-member summary:hover { background: #f6faff; }
+.officer-team-member summary strong { display: block; font-size: .88rem; }
+.officer-team-member summary small { display: block; color: #536479; }
+.officer-team-chevron { flex: none; margin-inline-start: auto; line-height: 0; color: #536479; transform: rotate(90deg); }
+.officer-team-member[open] .officer-team-chevron { transform: rotate(-90deg); }
+.officer-team-details { padding: 12px; border-top: 1px solid #b3d6ff; border-radius: 0 0 8px 8px; background: #edf5ff; font-size: .84rem; }
+.officer-team-details h3 { margin: 0; font-size: inherit; }
+.officer-team-details dl { display: grid; gap: 6px; margin: 10px 0; }
+.officer-team-details dl > div { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 8px; }
+.officer-team-details dt { color: #536479; }
+.officer-team-details dd { margin: 0; overflow-wrap: anywhere; }
+.officer-team-remove { width: 100%; padding: 6px 10px; border-color: #ffb9ba; background: white; color: #aa1d21; }
+.officer-team-remove:hover { background: #fff1f1; }
+
+@media (min-width: 900px) {
+  .officer-team-layout { grid-template-columns: minmax(0, 3fr) minmax(0, 5fr); align-items: start; gap: 18px; }
+}

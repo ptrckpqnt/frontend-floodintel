@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import WorkspaceSidebar, { Icon } from '../../components/WorkspaceSidebar';
 import WorkspaceHeader from '../../components/WorkspaceHeader';
+import AccountAvatar from '../../components/AccountAvatar';
 import MdrrmoHotlineLink from '../../components/MdrrmoHotlineLink';
 import EditReporterProfile from './EditReporterProfile';
 
@@ -256,7 +257,7 @@ function ReporterProfile({ onSignOut, reporter, onReporterUpdated }) {
   return <section className="reporter-inner reporter-profile" aria-label="Field Reporter profile">
     <div className="reporter-profile-identity">
       <div className="reporter-profile-heading">
-        <span className="reporter-profile-avatar" aria-hidden="true">{reporter.fullName[0]}</span>
+        <AccountAvatar account={reporter} className="reporter-profile-avatar" />
         <h1>{reporter.fullName}</h1>
       </div>
       <div className="reporter-profile-actions">

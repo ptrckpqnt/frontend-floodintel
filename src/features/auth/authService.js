@@ -9,9 +9,31 @@ const sessionKey = 'floodintel.demo.reporter.session';
 const passwordKey = (email) => `floodintel.demo.password.${email}`;
 const resetKey = (email) => `floodintel.demo.reset.${email}`;
 const profileKey = (id) => `floodintel.demo.profile.${id}`;
+const teamKey = 'floodintel.demo.team';
+const accountId = (account) => account.id ?? account.email;
+const avatarColors = ['#185abc', '#137333', '#a50e0e', '#7627bb', '#00695c', '#9c4600', '#a61d65', '#3f51b5'];
+
+function avatarColorFor(account) {
+  if (avatarColors.includes(account.avatarColor)) return account.avatarColor;
+  // Older accounts keep a stable color based on their immutable account ID.
+  let index = 0;
+  for (const character of accountId(account)) {
+    index = (index * 31 + character.codePointAt(0)) % avatarColors.length;
+  }
+  return avatarColors[index];
+}
+
+function readTeam() {
+  const saved = JSON.parse(localStorage.getItem(teamKey));
+  return saved ?? { created: [], removed: [] };
+}
+
+function activeAccounts(team = readTeam()) {
+  return [...accounts, ...team.created].filter((account) => !team.removed.includes(accountId(account)));
+}
 
 function readAccount(account) {
-  const id = account.email;
+  const id = accountId(account);
   let saved;
   try {
     saved = JSON.parse(localStorage.getItem(profileKey(id)));
@@ -21,6 +43,7 @@ function readAccount(account) {
   return {
     id,
     role: account.role ?? 'Field Reporter',
+    avatarColor: avatarColorFor(account),
     fullName: saved?.fullName ?? account.fullName,
     email: saved?.email ?? account.email,
     phone: saved?.phone ?? account.phone,
@@ -28,8 +51,8 @@ function readAccount(account) {
   };
 }
 
-function accountProfile({ id, fullName, email, phone, role }) {
-  return { id, fullName, email, phone, role, barangay: 'Paligui' };
+function accountProfile({ id, fullName, email, phone, role, avatarColor }) {
+  return { id, fullName, email, phone, role, avatarColor, barangay: 'Paligui' };
 }
 
 function normalizePhone(phone) {
@@ -38,7 +61,7 @@ function normalizePhone(phone) {
 
 export function getSignedInAccount() {
   const id = localStorage.getItem(sessionKey);
-  const account = accounts.find((candidate) => candidate.email === id);
+  const account = activeAccounts().find((candidate) => accountId(candidate) === id);
   if (!account) return null;
   return accountProfile(readAccount(account));
 }
@@ -63,7 +86,7 @@ export async function signIn(identifier, password, simulateFailure) {
   await checkConnection(simulateFailure);
   const login = normalizePhone(identifier).toLowerCase();
   const hash = await digest(password);
-  const account = accounts.map(readAccount).find(({ email, phone }) => email === login || phone === login);
+  const account = activeAccounts().map(readAccount).find(({ email, phone }) => email === login || phone === login);
   if (!account || hash !== account.passwordHash) {
     throw new Error('The phone number, email address, or password is incorrect.');
   }
@@ -71,15 +94,60 @@ export async function signIn(identifier, password, simulateFailure) {
   return accountProfile(account);
 }
 
-export async function updateReporterProfile(id, { fullName, email, phone, currentPassword, newPassword, confirmPassword }) {
-  const fixture = accounts.find((account) => account.email === id);
-  if (!fixture || fixture.role === 'BDRRM Officer' || localStorage.getItem(sessionKey) !== id) throw new Error('Sign in again to edit your profile.');
+function reporterContact({ fullName, email, phone }) {
   const name = fullName.trim();
   const address = email.trim().toLowerCase();
   const number = normalizePhone(phone);
   if (!name) throw new Error('Enter your full name.');
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address)) throw new Error('Enter a valid email address.');
   if (!/^09\d{9}$/.test(number)) throw new Error('Enter a Philippine mobile number, such as 09123456789.');
+  return { fullName: name, email: address, phone: number };
+}
+
+function checkUniqueContact({ email, phone }, existing) {
+  if (existing.some((account) => account.email === email)) throw new Error('That email address is already in use.');
+  if (existing.some((account) => account.phone === phone)) throw new Error('That mobile number is already in use.');
+}
+
+function requireOfficer() {
+  if (getSignedInAccount()?.role !== 'BDRRM Officer') throw new Error('Sign in as a BDRRM Officer to manage the team.');
+}
+
+export function listFieldReporters() {
+  requireOfficer();
+  return activeAccounts().map(readAccount).filter(({ role }) => role === 'Field Reporter').map(accountProfile);
+}
+
+export async function createFieldReporter({ fullName, email, phone, password }) {
+  requireOfficer();
+  const contact = reporterContact({ fullName, email, phone });
+  if (password.length < 6) throw new Error('Enter at least 6 characters for the temporary password.');
+  const initialHash = await digest(password);
+  requireOfficer();
+  const team = readTeam();
+  checkUniqueContact(contact, activeAccounts(team).map(readAccount));
+  const avatarColor = avatarColors[Math.floor(Math.random() * avatarColors.length)];
+  team.created.push({ id: crypto.randomUUID(), ...contact, initialHash, avatarColor });
+  localStorage.setItem(teamKey, JSON.stringify(team));
+}
+
+export function removeFieldReporter(id) {
+  requireOfficer();
+  const team = readTeam();
+  const account = activeAccounts(team).find((candidate) => accountId(candidate) === id);
+  if (!account || (account.role && account.role !== 'Field Reporter')) throw new Error('This Field Reporter is no longer on the team.');
+  if (!account.id) team.removed.push(id);
+  team.created = team.created.filter((candidate) => candidate.id !== id);
+  localStorage.setItem(teamKey, JSON.stringify(team));
+  localStorage.removeItem(resetKey(id));
+  localStorage.removeItem(profileKey(id));
+  localStorage.removeItem(passwordKey(id));
+}
+
+export async function updateReporterProfile(id, { fullName, email, phone, currentPassword, newPassword, confirmPassword }) {
+  const fixture = activeAccounts().find((account) => accountId(account) === id);
+  if (!fixture || fixture.role === 'BDRRM Officer' || localStorage.getItem(sessionKey) !== id) throw new Error('Sign in again to edit your profile.');
+  const contact = reporterContact({ fullName, email, phone });
 
   let previousHash;
   let newHash;
@@ -91,22 +159,21 @@ export async function updateReporterProfile(id, { fullName, email, phone, curren
   }
 
   const current = readAccount(fixture);
-  if (localStorage.getItem(sessionKey) !== id) throw new Error('Sign in again to edit your profile.');
+  if (getSignedInAccount()?.id !== id) throw new Error('Sign in again to edit your profile.');
   if (previousHash && current.passwordHash !== previousHash) throw new Error('The current password is incorrect.');
-  const others = accounts.filter((account) => account.email !== id).map(readAccount);
-  if (others.some((account) => account.email === address)) throw new Error('That email address is already in use.');
-  if (others.some((account) => account.phone === number)) throw new Error('That mobile number is already in use.');
+  const others = activeAccounts().filter((account) => accountId(account) !== id).map(readAccount);
+  checkUniqueContact(contact, others);
 
-  const updated = { id, role: current.role, fullName: name, email: address, phone: number, passwordHash: newHash ?? current.passwordHash };
+  const updated = { id, role: current.role, ...contact, passwordHash: newHash ?? current.passwordHash };
   localStorage.setItem(profileKey(id), JSON.stringify(updated));
-  if (current.email !== address || newHash) localStorage.removeItem(resetKey(id));
-  return accountProfile(updated);
+  if (current.email !== contact.email || newHash) localStorage.removeItem(resetKey(id));
+  return accountProfile({ ...updated, avatarColor: current.avatarColor });
 }
 
 export async function requestPasswordReset(email, simulateFailure) {
   await checkConnection(simulateFailure);
   const address = email.trim().toLowerCase();
-  const account = accounts.map(readAccount).find((candidate) => candidate.email === address);
+  const account = activeAccounts().map(readAccount).find((candidate) => candidate.email === address);
   if (!account) return null;
   const token = crypto.randomUUID();
   localStorage.setItem(resetKey(account.id), JSON.stringify({ token, expires: Date.now() + 30 * 60 * 1000 }));
@@ -117,9 +184,9 @@ export async function requestPasswordReset(email, simulateFailure) {
 
 function findResetAccount(token) {
   if (!token) return undefined;
-  return accounts.find(({ email }) => {
+  return activeAccounts().find((account) => {
     try {
-      const reset = JSON.parse(localStorage.getItem(resetKey(email)));
+      const reset = JSON.parse(localStorage.getItem(resetKey(accountId(account))));
       return reset?.token === token && reset.expires > Date.now();
     } catch {
       return false;
@@ -137,7 +204,8 @@ export async function updatePassword(token, password, simulateFailure) {
   const hash = await digest(password);
   const account = findResetAccount(token);
   if (!account) throw new Error('This reset link is invalid or expired. Request a new link.');
-  localStorage.setItem(profileKey(account.email), JSON.stringify({ ...readAccount(account), passwordHash: hash }));
-  localStorage.removeItem(resetKey(account.email));
-  if (localStorage.getItem(sessionKey) === account.email) signOut();
+  const id = accountId(account);
+  localStorage.setItem(profileKey(id), JSON.stringify({ ...readAccount(account), passwordHash: hash }));
+  localStorage.removeItem(resetKey(id));
+  if (localStorage.getItem(sessionKey) === id) signOut();
 }
