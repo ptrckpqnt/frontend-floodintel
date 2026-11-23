@@ -3,53 +3,19 @@ import WorkspaceSidebar, { Icon } from '../../components/WorkspaceSidebar';
 import WorkspaceHeader from '../../components/WorkspaceHeader';
 import WorkspaceProfile from '../../components/WorkspaceProfile';
 import MdrrmoHotlineLink from '../../components/MdrrmoHotlineLink';
-import OfficerInbox, { inboxStatuses } from './OfficerInbox';
+import OfficerInbox from './OfficerInbox';
 import OfficerReportReview from './OfficerReportReview';
 import OfficerTeam from './OfficerTeam';
 import { NewSitRep, SitRepList } from './OfficerSitReps';
-import { summarizeReports } from './sitRepSummary';
-import sampleFloodEvidence from './sample-flood-evidence.jpg';
+import { RecentReports } from '../flood-reports/ReportCards';
 import './officer.css';
 
 const navigation = [['home', 'Home'], ['inbox', 'Inbox'], ['reports', 'SitReps'], ['team', 'Team'], ['profile', 'Profile']];
-const sampleReports = [
-  { id: 'san-vicente-new', location: 'San Vicente Apalit', reporter: 'Aljon Ken Fernandez', time: 'Just now',
-    dateLabel: 'Jun 24, 01:23 AM', waterLevel: 'Waist-deep (50–100 cm)', status: 'Awaiting Review', tone: 'waiting',
-    reference: '393272', photoUrl: sampleFloodEvidence, phone: '09000000003', landmark: 'Villena St.', coordinates: [14.94514, 120.78503],
-    waterLevelRank: 3, waterFlow: 'Very fast (dangerous current)', affectedFamilies: 34, description: 'We need immediate response action.',
-    evacuation: 'Yes', boat: 'No', vulnerable: 'Multiple' },
-  { id: 'san-vicente-accepted', location: 'San Vicente Apalit', reporter: 'Aljon Ken Fernandez', time: '11 min ago',
-    dateLabel: 'Jun 24, 01:13 AM', waterLevel: 'Waist-deep (50–100 cm)', status: 'Accepted', tone: 'accepted',
-    reference: '393271', phone: '09000000003', waterLevelRank: 3, waterFlow: 'Fast', affectedFamilies: 34,
-    evacuation: 'Yes', vulnerable: 'Multiple', description: 'Floodwater has entered homes along Villena Street.' },
-  { id: 'aroma', location: 'Aroma Street', reporter: 'Mark Jason Patron', time: '2 hr ago',
-    dateLabel: 'Jun 23, 10:47 PM', waterLevel: 'Waist-deep (50–100 cm)', status: 'Sent to MDRRMO', tone: 'sent',
-    reference: '393270', phone: '09000000001', waterLevelRank: 3, affectedFamilies: 11, evacuation: 'No' },
-];
-const sampleSitReps = [{
-  id: 'sample-sitrep', reference: '591673', createdAt: Date.parse('2026-06-24T01:09:00+08:00'),
-  author: 'Patrick Pioquinto', barangay: 'Paligui', narrative: 'Flooding was reported on Aroma Street.',
-  reportIds: ['aroma'],
-  ...summarizeReports(sampleReports.filter(({ tone }) => tone === 'sent')),
-}];
-
-function ReportList({ items, onSelect }) {
-  return <ul className="reporter-report-list officer-reports">
-    {items.map((report) => <li key={report.id}>
-      <button type="button" onClick={() => onSelect(report)}>
-        <Icon name="pin" />
-        <span><strong>{report.location}</strong><small>{report.reporter} · {report.time}</small></span>
-        <span className="reporter-status" data-tone={report.tone}>{report.status}</span>
-      </button>
-    </li>)}
-  </ul>;
-}
-
 function Dashboard({ reports, sentCount, onInbox, onSelect, onNewSitRep }) {
-  const pendingCount = reports.filter((report) => report.tone === 'waiting').length;
+  const pendingCount = reports.filter((report) => report.status === 'Awaiting Review').length;
   const stats = [
     ['waiting', 'waiting', 'Pending Review', pendingCount],
-    ['accepted', 'accepted', 'Accepted Reports', reports.filter((report) => report.tone === 'accepted').length],
+    ['accepted', 'accepted', 'Accepted Reports', reports.filter((report) => report.status === 'Accepted').length],
     ['reports', 'inbox', 'Total Inbox', reports.length],
     ['calendar', 'send', 'SitReps Sent', sentCount],
   ];
@@ -73,7 +39,7 @@ function Dashboard({ reports, sentCount, onInbox, onSelect, onNewSitRep }) {
           <button type="button" className="reporter-text-button reporter-view-all" onClick={() => onInbox(false)}>View All Reports</button>
         </div>
         <p>Latest reports from your barangay</p>
-        <ReportList items={reports} onSelect={onSelect} />
+        <RecentReports reports={reports.slice(0, 5)} onSelect={onSelect} showReporter />
       </section>
       <div className="officer-actions">
         <button type="button" className="reporter-primary officer-inbox-action" onClick={() => onInbox(false)}><Icon name="inbox" /> Review Inbox</button>
@@ -87,8 +53,9 @@ function Dashboard({ reports, sentCount, onInbox, onSelect, onNewSitRep }) {
   </>;
 }
 
-export default function OfficerWorkspace({ account, onSignOut, onAccountUpdated }) {
-  const [{ reports, sitReps }, setOfficerData] = useState({ reports: sampleReports, sitReps: sampleSitReps });
+export default function OfficerWorkspace({ account, onSignOut, onAccountUpdated, board, updateBoard }) {
+  const reports = board.reports.filter((report) => report.reporter.barangay === account.barangay);
+  const sitReps = board.sitReps.filter((entry) => entry.barangay === account.barangay);
   const [screen, setScreen] = useState('home');
   const [inboxStatus, setInboxStatus] = useState('');
   const [selectedId, setSelectedId] = useState(null);
@@ -101,13 +68,15 @@ export default function OfficerWorkspace({ account, onSignOut, onAccountUpdated 
     window.scrollTo(0, 0);
   }
 
-  function recordDecision(id, tone, reviewNote) {
-    setOfficerData((current) => ({
-      ...current,
-      reports: current.reports.map((report) => report.id === id && report.tone === 'waiting'
-        ? { ...report, tone, status: inboxStatuses[tone], reviewNote }
-        : report),
-    }));
+  function recordDecision(id, status, reviewNote) {
+    return updateBoard((current) => {
+      const report = current.reports.find((entry) => entry.id === id);
+      if (report?.status !== 'Awaiting Review' || report.reporter.barangay !== account.barangay) {
+        throw new Error('This report is no longer awaiting your review.');
+      }
+      return { ...current, reports: current.reports.map((entry) =>
+        entry.id === id ? { ...entry, status, reviewNote } : entry) };
+    });
   }
 
   function navigate(nextScreen) {
@@ -120,7 +89,7 @@ export default function OfficerWorkspace({ account, onSignOut, onAccountUpdated 
 
   function openInbox(onlyPending) {
     navigate('inbox');
-    setInboxStatus(onlyPending ? 'waiting' : '');
+    setInboxStatus(onlyPending ? 'Awaiting Review' : '');
   }
 
   function openReport(report) {
@@ -134,17 +103,22 @@ export default function OfficerWorkspace({ account, onSignOut, onAccountUpdated 
     window.scrollTo(0, 0);
   }
 
-  function endorseSitRep(reportIds, summary) {
+  async function endorseSitRep(reportIds, summary) {
     const id = crypto.randomUUID();
-    const reference = String(591674 + sitReps.length - sampleSitReps.length);
-    const entry = { ...summary, id, reference, reportIds, createdAt: Date.now(), author: account.fullName, barangay: account.barangay };
-    setOfficerData((current) => ({
-      reports: current.reports.map((report) => reportIds.includes(report.id)
-        ? { ...report, tone: 'sent', status: 'Sent to MDRRMO' }
-        : report),
-      sitReps: [entry, ...current.sitReps],
-    }));
-    setEndorsementMessage(`SitRep #${reference} endorsed in this demo session.`);
+    await updateBoard((current) => {
+      const selected = current.reports.filter((report) => reportIds.includes(report.id) &&
+        report.status === 'Accepted' && report.reporter.barangay === account.barangay);
+      if (!selected.length || selected.length !== reportIds.length) {
+        throw new Error('The selected reports are no longer available. Check your selection and try again.');
+      }
+      const reference = String(591673 + current.sitReps.length);
+      const entry = { ...summary, id, reference, reportIds, createdAt: Date.now(), author: account.fullName, barangay: account.barangay };
+      return {
+        reports: current.reports.map((report) => reportIds.includes(report.id) ? { ...report, status: 'In SitRep' } : report),
+        sitReps: [entry, ...current.sitReps],
+      };
+    });
+    setEndorsementMessage('SitRep endorsed in this browser demo.');
     setEditingDraft(false);
     window.scrollTo(0, 0);
   }
@@ -159,7 +133,7 @@ export default function OfficerWorkspace({ account, onSignOut, onAccountUpdated 
       {screen === 'profile' && <WorkspaceProfile account={account} onSignOut={onSignOut}
         onAccountUpdated={onAccountUpdated} avatarLetters={2} />}
       {screen === 'reports' && (editingDraft
-        ? <NewSitRep reports={reports.filter(({ tone }) => tone === 'accepted')} account={account}
+        ? <NewSitRep reports={reports.filter(({ status }) => status === 'Accepted')} account={account}
           onBack={() => navigate('reports')} onEndorse={endorseSitRep} />
         : <SitRepList sitReps={sitReps} barangay={account.barangay} onCreate={newSitRep} message={endorsementMessage} />)}
       {(screen === 'home' || screen === 'team') && <>

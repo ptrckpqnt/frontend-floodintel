@@ -1,4 +1,4 @@
-.sitrep-header {
+.reporter-history-header.sitrep-header {
   position: sticky;
   top: 0;
   z-index: 2;
@@ -8,10 +8,11 @@
   justify-content: space-between;
   gap: 12px;
 }
+.sitrep-heading { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.sitrep-heading .officer-review-back { flex: none; }
 .sitrep-header h1 { margin: 0 0 3px; font-size: 1.2rem; }
 .sitrep-header .reporter-primary { width: auto; min-height: 40px; }
 .sitrep-header .reporter-primary:hover { background: #0047ba; }
-.sitrep-header .officer-review-back + div { flex: 1; }
 .sitrep-list, .sitrep-form { display: grid; gap: 16px; align-items: start; }
 .sitrep-card, .sitrep-form > section { min-width: 0; overflow-wrap: anywhere; }
 .sitrep-form h2, .sitrep-meta { display: flex; align-items: center; gap: 6px; }
@@ -74,6 +75,6 @@
 }
 
 @media (min-width: 1150px) {
-  .sitrep-form { grid-template-columns: minmax(0, 1.12fr) minmax(0, .85fr) minmax(0, 1fr); }
+  .sitrep-form { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .sitrep-form .sitrep-summary, .sitrep-form .sitrep-compose { align-self: stretch; }
 }

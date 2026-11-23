@@ -38,7 +38,6 @@
 .officer-actions .reporter-primary:hover { background: #0047ba; }
 .officer-actions .officer-inbox-action { border-color: #b3cefa; background: #eaf2ff; color: #0848b5; }
 .officer-actions .officer-inbox-action:hover { background: #dbe9ff; }
-.officer-workspace .reporter-status[data-tone="sent"] { background: #e0eeff; color: #0848b5; }
 
 @media (width < 900px) {
   .officer-workspace .reporter-nav { grid-template-columns: repeat(5, minmax(0, 1fr)); }
@@ -50,7 +49,7 @@
   .officer-dashboard-columns { grid-template-columns: minmax(0, 2fr) minmax(200px, 1fr); align-items: start; }
 }
 
-.officer-dashboard-columns .officer-reports { grid-template-columns: minmax(0, 1fr); }
+.officer-dashboard-columns .reporter-report-list { grid-template-columns: minmax(0, 1fr); }
 
 .officer-inbox-header {
   position: sticky;
@@ -58,7 +57,6 @@
   z-index: 2;
 }
 
-.officer-inbox .reporter-history-level::before { background: #ef5d00; }
 
 .officer-review-header {
   position: sticky;
@@ -72,34 +70,6 @@
 .officer-review-header h1 { margin: 0; font-size: 1.15rem; }
 .officer-review-back { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 8px; }
 .officer-review-back:hover { background: #eaf2ff; }
-.officer-review-grid, .officer-review-side { display: grid; gap: 14px; }
-.officer-review-side { grid-template-rows: auto 1fr; }
-.officer-review-content h2 { display: flex; align-items: center; gap: 7px; }
-.officer-review-content h2 svg, .officer-review-link svg { width: 16px; height: 16px; }
-.officer-evidence figure { margin: 12px 0 0; }
-.officer-evidence img { display: block; width: 100%; aspect-ratio: 1.56; object-fit: cover; border-radius: 9px; }
-.officer-evidence figcaption { margin-top: 5px; color: #536479; font-size: .74rem; }
-.officer-reporter-contact { display: flex; align-items: center; gap: 10px; }
-.officer-reporter-contact p { margin: 0; }
-.officer-reporter-contact .officer-review-link { margin-inline-start: auto; }
-.officer-reporter-icon { display: grid; place-items: center; flex: none; width: 34px; height: 34px; border-radius: 50%; background: #e3eeff; color: #0848b5; }
-.officer-reporter-icon svg { width: 17px; height: 17px; }
-.officer-review-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 5px 9px;
-  border: 1px solid var(--reporter-border);
-  border-radius: 7px;
-  color: inherit;
-  font-size: .82rem;
-  text-decoration: none;
-}
-.officer-review-link:hover { background: #eaf2ff; }
-.officer-review-fields { display: grid; gap: 12px; margin: 18px 0 0; font-size: .84rem; }
-.officer-review-fields > div { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 8px; }
-.officer-review-fields dt { color: #536479; }
-.officer-review-fields dd { margin: 0; text-align: end; overflow-wrap: anywhere; }
 .officer-decision { margin-top: 14px; }
 .officer-decision > p { margin: 5px 0 15px; }
 .officer-decision label { font-size: .85rem; }
@@ -113,14 +83,3 @@
 .officer-return:hover { background: #fff1f1; }
 .officer-accept { background: #087b40; }
 .officer-accept:hover { background: #066331; }
-
-@media (min-width: 900px) {
-  .officer-review-grid { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
-  .officer-inbox .reporter-history-row {
-    grid-template-columns: minmax(0, 1fr) auto auto;
-    grid-template-areas: "location location arrow" "level level ." "date status .";
-    gap: 5px 8px;
-    align-content: start;
-  }
-  .officer-inbox .reporter-history-row .reporter-status { margin-top: 0; }
-}

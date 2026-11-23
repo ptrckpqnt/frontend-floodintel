@@ -4,6 +4,8 @@ import ReporterWorkspace from './features/field-reporter/ReporterWorkspace';
 import { getSignedInAccount, signOut } from './features/auth/authService';
 import FloodReportForm from './features/field-reporter/FloodReportForm';
 import OfficerWorkspace from './features/bdrrmo/OfficerWorkspace';
+import useReportBoard from './features/flood-reports/useReportBoard';
+import { addReport } from './features/flood-reports/reportStore';
 
 function readResetToken() {
   return new URLSearchParams(window.location.hash.slice(1)).get('reset');
@@ -13,6 +15,7 @@ export default function App() {
   const [account, setAccount] = useState(getSignedInAccount);
   const [token, setToken] = useState(readResetToken);
   const [entryScreen, setEntryScreen] = useState('signIn');
+  const { board, loadError, updateBoard } = useReportBoard();
 
   useEffect(() => {
     const syncSession = () => setAccount(getSignedInAccount());
@@ -41,11 +44,16 @@ export default function App() {
   }
 
   if (account && token === null) {
-    if (account.role === 'BDRRM Officer') {
-      return <OfficerWorkspace key={account.id} account={account} onAccountUpdated={setAccount} onSignOut={handleSignOut} />;
-    }
-    return <ReporterWorkspace key={account.id} reporter={account} onReporterUpdated={setAccount}
-      renderReportForm={(props) => <FloodReportForm {...props} />} onSignOut={handleSignOut} />;
+    return <>
+      {loadError && <p className="error" role="alert">{loadError}</p>}
+      {account.role === 'BDRRM Officer'
+        ? <OfficerWorkspace key={account.id} account={account} onAccountUpdated={setAccount} onSignOut={handleSignOut}
+          board={board} updateBoard={updateBoard} />
+        : <ReporterWorkspace key={account.id} reporter={account} onReporterUpdated={setAccount} onSignOut={handleSignOut}
+          reports={board.reports.filter((report) => report.reporter.id === account.id)}
+          onSubmitReport={(report, confirmation) => updateBoard((current) => addReport(current, report, confirmation.id, account))}
+          renderReportForm={(props) => <FloodReportForm {...props} />} />}
+    </>;
   }
 
   return <Authentication key={token ?? 'auth'} token={token} entryScreen={entryScreen}

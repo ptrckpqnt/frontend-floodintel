@@ -9,10 +9,12 @@ const dateFormat = new Intl.DateTimeFormat('en-PH', {
 
 function SitRepHeader({ title, subtitle, onBack, onCreate }) {
   return <header className="reporter-history-header sitrep-header">
-    {onBack && <button type="button" className="reporter-text-button officer-review-back" aria-label="Back to Situation Reports" onClick={onBack}>
-      <span className="reporter-back-icon" aria-hidden="true" />
-    </button>}
-    <div><h1>{title}</h1><p>{subtitle}</p></div>
+    <div className="sitrep-heading">
+      {onBack && <button type="button" className="reporter-text-button officer-review-back" aria-label="Back to Situation Reports" onClick={onBack}>
+        <span className="reporter-back-icon" aria-hidden="true" />
+      </button>}
+      <div><h1>{title}</h1><p>{subtitle}</p></div>
+    </div>
     {onCreate && <button type="button" className="reporter-primary" onClick={onCreate}><Icon name="submit" /> Create New SitRep</button>}
   </header>;
 }
@@ -50,20 +52,29 @@ export function NewSitRep({ reports, account, onBack, onEndorse }) {
   const [evacuationStatus, setEvacuationStatus] = useState('');
   const [narrative, setNarrative] = useState('');
   const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
   const selected = reports.filter(({ id }) => selectedIds.includes(id));
   const summary = summarizeReports(selected);
   const families = familyOverride === '' ? summary.families : Number(familyOverride);
   const narrativeLength = narrative.trim().length;
 
-  function submit(event) {
+  async function submit(event) {
     event.preventDefault();
+    if (saving) return;
     if (!selected.length || narrativeLength < 20 || !Number.isSafeInteger(families) || families < 0) {
       setError('Select at least one report, enter a valid family total, and write a narrative of at least 20 characters.');
       return;
     }
-    onEndorse(selected.map(({ id }) => id), {
-      ...summary, families, evacuationStatus: evacuationStatus.trim(), narrative: narrative.trim(),
-    });
+    setError('');
+    setSaving(true);
+    try {
+      await onEndorse(selected.map(({ id }) => id), {
+        ...summary, families, evacuationStatus: evacuationStatus.trim(), narrative: narrative.trim(),
+      });
+    } catch (failure) {
+      setError(failure.message);
+      setSaving(false);
+    }
   }
 
   return <>
@@ -82,14 +93,14 @@ export function NewSitRep({ reports, account, onBack, onEndorse }) {
                     const checked = event.target.checked;
                     setSelectedIds((current) => checked ? [...current, report.id] : current.filter((id) => id !== report.id));
                   }} />
-                <span><strong>{report.location}</strong><small>{report.waterLevel} · {report.reporter}</small></span>
+                <span><strong>{report.location}</strong><small>{report.waterLevel} · {report.reporter.fullName}</small></span>
               </label>
             </div>
             <details>
               <summary aria-label={`Details for ${report.location}`}><Icon name="chevron" /></summary>
               <div>Flow: {report.waterFlow ?? 'Not recorded'}</div>
-              <div>Families: {report.affectedFamilies ?? 'Not recorded'}</div>
-              <div>Evacuation: {report.evacuation ?? 'Not recorded'}</div>
+              <div>Families: {report.estimatedAffectedFamilies ?? 'Not recorded'}</div>
+              <div>Evacuation: {report.evacuationNeeded ? 'Yes' : 'No'}</div>
               {report.description && <div>{report.description}</div>}
             </details>
           </li>)}
@@ -127,8 +138,10 @@ export function NewSitRep({ reports, account, onBack, onEndorse }) {
           <p>Families: {families} affected</p>
         </div>
         {error && <p className="error" role="alert">{error}</p>}
-        <button type="submit" className="reporter-primary sitrep-endorse" disabled={!selected.length}><Icon name="send" /> Endorse to MDRRMO</button>
-        <small>Demo only. Endorsements last for this session.</small>
+        <button type="submit" className="reporter-primary sitrep-endorse" disabled={!selected.length || saving}>
+          <Icon name="send" /> {saving ? 'Saving…' : 'Endorse to MDRRMO'}
+        </button>
+        <small>Demo only. Endorsements are saved in this browser.</small>
       </section>
     </form>
   </>;

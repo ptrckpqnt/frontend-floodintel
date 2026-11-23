@@ -105,6 +105,7 @@ button:is(.flood-capture-location, .reporter-edit-profile-button) {
 .reporter-report-list .reporter-recent-arrow svg { width: 14px; height: 14px; color: #536479; }
 .reporter-report-list small, .reporter-sidebar-account small { display: block; color: #5d6f86; }
 .reporter-status { margin-left: auto; padding: 3px 6px; border-radius: 7px; background: #fff4c5; color: #884600; font-size: .66rem; text-align: center; }
+.reporter-status[data-tone="sent"], .reporter-detail-status[data-tone="sent"] { background: #e0eeff; color: #0848b5; }
 .reporter-hotline { display: flex; gap: 10px; border-color: #ffd4a7; background: #fff7ed; color: #9a3412; }
 .reporter-hotline p { margin: 3px 0; font-size: .83rem; }
 .reporter-hotline a { color: inherit; font-weight: 650; }
