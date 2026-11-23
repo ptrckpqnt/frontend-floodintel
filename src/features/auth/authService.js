@@ -144,9 +144,9 @@ export function removeFieldReporter(id) {
   localStorage.removeItem(passwordKey(id));
 }
 
-export async function updateReporterProfile(id, { fullName, email, phone, currentPassword, newPassword, confirmPassword }) {
+export async function updateAccountProfile(id, { fullName, email, phone, currentPassword, newPassword, confirmPassword }) {
   const fixture = activeAccounts().find((account) => accountId(account) === id);
-  if (!fixture || fixture.role === 'BDRRM Officer' || localStorage.getItem(sessionKey) !== id) throw new Error('Sign in again to edit your profile.');
+  if (!fixture || localStorage.getItem(sessionKey) !== id) throw new Error('Sign in again to edit your profile.');
   const contact = reporterContact({ fullName, email, phone });
 
   let previousHash;

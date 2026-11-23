@@ -124,8 +124,8 @@ export default function FloodReportForm({ onSubmitted, onViewReport, onBack, pho
     setSending(true);
     try {
       const result = await submitFloodReport(report, { simulateFailure });
+      await onSubmitted(report, result);
       setConfirmation(result);
-      onSubmitted(report, result);
       window.scrollTo(0, 0);
     } catch (error) {
       setFailure(error.message);

@@ -1,6 +1,8 @@
 @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap") screen and (min-width: 900px);
 
 :root {
+  --focus-blue: #005cf5;
+  --focus-halo: #005cf51a;
   font: 16px/1.5 system-ui, sans-serif;
   color: #173534;
   background: #edf4f2;
@@ -42,7 +44,14 @@ button {
 }
 button:disabled { opacity: .65; cursor: default; }
 button.secondary { background: #e6f1ee; color: #184941; border-color: #a0bcb5; }
-:focus-visible { outline: 3px solid #1d8477; outline-offset: 3px; }
+:focus-visible { outline: 3px solid var(--focus-blue); outline-offset: 3px; }
+:is(input, select, textarea):focus,
+.field-focus-group:focus-within {
+  outline: 1px solid var(--focus-blue);
+  outline-offset: 0;
+  box-shadow: 0 0 0 2px var(--focus-halo);
+}
+.field-focus-group input:focus { outline: none; box-shadow: none; }
 .location, .error { margin: 6px 0 0; font-size: .9rem; }
 .error { color: #96251e; }
 .summary { padding: 10px 12px; background: #fff0ee; border-radius: 6px; margin: 0 0 14px; }

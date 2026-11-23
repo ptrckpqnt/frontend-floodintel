@@ -37,7 +37,7 @@ Sample sign-in and password changes are stored in the browser by account. Clear 
 ## Try the Field Reporter workflow
 
 - From Home, open **View All** to see My Reports or **Submit Flood Report** to open the form. On mobile, the camera-plus button also opens the form. On desktop, My Reports and Submit are available in the sidebar.
-- Open **Profile** to log out. Home uses sample data and includes simulated reports submitted during the current visit. The form currently uses centimeters for water level.
+- Open **Profile** to log out. Reports and attached photos are stored in this browser. Submitted reports also appear in the BDRRMO Inbox for the assigned barangay when you switch accounts on the same site. The form uses centimeters for water level.
 
 - Submit an empty form and check the required field messages.
 - Enter water level and affected households, choose a sample image, and capture location.

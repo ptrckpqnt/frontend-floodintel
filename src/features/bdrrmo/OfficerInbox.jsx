@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { Icon } from '../../components/WorkspaceSidebar';
-
-export const inboxStatuses = { waiting: 'Awaiting Review', accepted: 'Accepted', correction: 'Needs Correction', sent: 'In SitRep' };
+import { ReportHistoryCard } from '../flood-reports/ReportCards';
+import { reportStatuses } from '../flood-reports/reportData';
 
 export default function OfficerInbox({ reports, barangay, status, onStatusChange, selected, onSelect }) {
   const [search, setSearch] = useState('');
   const query = search.trim().toLowerCase();
-  const visibleReports = reports.filter(({ tone, location, reporter }) =>
-    (!status || tone === status) && `${location} ${reporter}`.toLowerCase().includes(query));
+  const visibleReports = reports.filter((report) =>
+    (!status || report.status === status) && `${report.location} ${report.reporter.fullName}`.toLowerCase().includes(query));
 
   if (selected) return null;
 
@@ -18,7 +18,7 @@ export default function OfficerInbox({ reports, barangay, status, onStatusChange
         <p>Flood reports from Brgy. {barangay}</p>
       </div>
       <div className="reporter-history-controls" role="group" aria-label="Filter reports">
-        <label className="reporter-history-search">
+        <label className="reporter-history-search field-focus-group">
           <Icon name="search" />
           <input type="search" aria-label="Search by location or reporter" placeholder="Search by location or reporter…"
             value={search} onChange={(event) => setSearch(event.target.value)} />
@@ -27,7 +27,7 @@ export default function OfficerInbox({ reports, barangay, status, onStatusChange
           <Icon name="filter" />
           <select aria-label="Report status" value={status} onChange={(event) => onStatusChange(event.target.value)}>
             <option value="">All Reports</option>
-            {Object.entries(inboxStatuses).map(([tone, label]) => <option key={tone} value={tone}>{label}</option>)}
+            {Object.keys(reportStatuses).map((value) => <option key={value}>{value}</option>)}
           </select>
         </label>
       </div>
@@ -35,13 +35,7 @@ export default function OfficerInbox({ reports, barangay, status, onStatusChange
     <div className="reporter-history-results">
       <ul className="reporter-history-list">
         {visibleReports.map((report) => <li key={report.id}>
-          <button className="reporter-history-row" type="button" onClick={() => onSelect(report)}>
-            <span className="reporter-history-location"><Icon name="pin" /><strong>{report.location}</strong></span>
-            <span className="reporter-history-level">{report.waterLevel}</span>
-            <span className="reporter-history-date">{report.reporter.split(' ')[0]} · {report.dateLabel}</span>
-            <span className="reporter-status" data-tone={report.tone}>{inboxStatuses[report.tone]}</span>
-            <span className="reporter-history-arrow"><Icon name="chevron" /></span>
-          </button>
+          <ReportHistoryCard report={report} onSelect={() => onSelect(report)} showReporter />
         </li>)}
       </ul>
       <p className="reporter-history-count" role="status">
