@@ -59,6 +59,7 @@ export default function WorkspaceSidebar({ account, avatarLetters, navigation, s
         {navigation.map(([id, label]) => {
           const submenu = subnavigation?.[id];
           const item = <button key={id} type="button" className={`reporter-nav-${id}`}
+            aria-expanded={submenu?.expanded} aria-controls={submenu?.controls}
             aria-current={screen === id ? 'page' : undefined} onClick={() => navigate(id)}>
             <span className="reporter-nav-icon"><Icon name={id} />{id === 'submit' && mobileSubmitLabel && <Icon name="camera" />}</span>
             <span className="reporter-nav-label">{id === 'submit' ? mobileSubmitLabel : label}</span>

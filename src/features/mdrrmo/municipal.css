@@ -232,16 +232,6 @@
 .municipal-map-placeholder p { margin: 0; font-size: .82rem; }
 .municipal-map-placeholder .reporter-primary { width: auto; }
 .municipal-map-placeholder .reporter-primary:hover { background: #0047ba; }
-.municipal-map-sample {
-  padding: 3px 7px;
-  border: 2px solid #005cf5;
-  border-radius: 999px;
-  background: white;
-  color: #101827;
-  font-size: .72rem;
-  font-weight: 700;
-  white-space: nowrap;
-}
 .municipal-map-controls { position: absolute; top: 10px; left: 10px; display: flex; flex-wrap: wrap; gap: 5px; }
 .municipal-map-controls button { padding: 4px 8px; border-color: var(--reporter-border); background: white; color: #163962; font-size: .76rem; }
 .municipal-map-controls button:hover:not(:disabled) { background: #eaf2ff; }
@@ -298,10 +288,7 @@
 .municipal-panel .reporter-profile-heading h1 { font-size: 1.05rem; }
 .municipal-panel .reporter-profile-actions { display: flex; }
 .municipal-panel .reporter-edit-profile-button { white-space: nowrap; padding-inline: 10px; }
-.municipal-team-member h4 { margin: 0; }
-.municipal-account-details { display: grid; gap: 10px; margin: 10px 0 0; font-size: .85rem; }
-.municipal-account-details dt { color: #536479; }
-.municipal-account-details dd { margin: 0; overflow-wrap: anywhere; }
+.municipal-panel .officer-team-layout { grid-template-columns: minmax(0, 1fr); }
 .municipal-panel .reporter-text-button:hover { color: var(--reporter-blue); }
 .municipal-panel-body { padding: 12px 14px; }
 .municipal-search { display: flex; align-items: center; gap: 5px; padding-inline-start: 8px; margin: 0; background: #eef0f3; border-radius: 7px; }
@@ -325,7 +312,9 @@
 .municipal-location-card:hover { border-color: #a8c5f5; background: #f6faff; }
 .municipal-location-card strong { overflow-wrap: anywhere; }
 .municipal-location-card small { display: block; color: #536479; font-weight: 400; }
-.municipal-location-depth { color: #0848b5; }
+.municipal-location-depth {
+  font-weight: 700;
+}
 .municipal-priority section + section { margin-top: 14px; }
 .municipal-priority h3, .municipal-report-detail h3 { margin: 0; font-size: .9rem; }
 .municipal-priority h3 span { color: #0848b5; }
@@ -365,10 +354,10 @@
   .municipal-sidebar-collapsed .municipal-workspace-subnav button { justify-content: flex-start; padding-inline: 8px; }
   .municipal-sidebar-collapsed #municipal-reports-subnav { width: 125px; }
   .municipal-sidebar-collapsed #municipal-priority-subnav { width: 184px; }
-  .municipal-sidebar-collapsed:has(#municipal-reports-subnav:not([hidden])) #municipal-priority-subnav {
-    inset-inline-start: calc(100% + 137px);
+  .municipal-sidebar-collapsed .reporter-nav-row {
+    grid-template-columns: minmax(0, 1fr);
+    padding-inline-end: 0;
   }
-  .municipal-sidebar-collapsed .reporter-nav-row > button:not(.municipal-subnav-toggle) svg { width: 18px; height: 18px; }
   .municipal-account-menu { margin-top: auto; padding: 8px 0; border-top: 1px solid var(--reporter-border); }
   .municipal-account-identity { display: block; }
   .municipal-account-actions { inset: auto 0 calc(100% + 5px) 0; }
@@ -468,33 +457,37 @@
 
 .municipal-workspace[data-theme="dark"] :is(
   .municipal-header, .reporter-sidebar, .municipal-panel, .municipal-panel-header, .municipal-mobile-navigation,
-  .municipal-location-card, .municipal-report-detail .reporter-card, .municipal-account-actions, .municipal-team-member,
+  .municipal-location-card, .municipal-report-detail .reporter-card, .municipal-account-actions,
+  .officer-team-form, .officer-team-roster,
   .reporter-profile-identity, .reporter-profile-card, .reporter-edit-dialog, .reporter-logout-dialog
 ) { background: var(--municipal-panel); }
 
 .municipal-workspace[data-theme="dark"] :is(
   .municipal-map-toolbar, .municipal-sidebar-toggle, .municipal-theme-toggle, .municipal-map-controls button, .municipal-tilt-controls > span,
   .municipal-map-toolbar select, .municipal-search, .municipal-map-legend, .municipal-map-error,
-  .municipal-map-sample, .reporter-response-values > div, .reporter-detail-photo,
-  .reporter-profile-fields > div, .reporter-edit-dialog input, .reporter-profile .secondary, .reporter-logout-cancel
+  .reporter-response-values > div, .reporter-detail-photo,
+  .reporter-profile-fields > div, .reporter-edit-dialog input, .reporter-profile .secondary, .reporter-logout-cancel,
+  .officer-team-form input:not([type="checkbox"]), .officer-team-form-actions button[type="button"]
 ) { background: var(--municipal-control); color: inherit; }
 
 .municipal-workspace[data-theme="dark"] :is(
   .municipal-clock span, .municipal-results, .municipal-panel-body > p,
   .municipal-priority p, .municipal-location-card small, .reporter-sidebar-account small,
-  .reporter-detail-card dt, .reporter-detail-date, .municipal-account-identity small, .municipal-account-details dt,
+  .reporter-detail-card dt, .reporter-detail-date, .municipal-account-identity small,
+  .officer-team-member summary small, .officer-team-details dt, .officer-team-chevron, .officer-team-form label,
   .reporter-profile-fields dt, .reporter-profile-card svg, .reporter-edit-password p, .reporter-logout-dialog p, .municipal-panel-icon
 ) { color: var(--municipal-muted); }
 
 .municipal-workspace[data-theme="dark"] :is(
-  .reporter-brand, .reporter-text-button, .municipal-location-depth, .municipal-priority h3 span, .reporter-map-link
+  .reporter-brand, .reporter-text-button, .municipal-priority h3 span, .reporter-map-link
 ) { color: var(--reporter-blue); }
 .municipal-workspace[data-theme="dark"] :is(.municipal-location-card, .reporter-nav button, .municipal-search input, .municipal-account-actions button) { color: inherit; }
 .municipal-workspace[data-theme="dark"] :is(
   .municipal-location-card:hover,
   .municipal-sidebar-toggle:hover, .municipal-theme-toggle:hover, .municipal-map-controls button:hover:not(:disabled),
   .municipal-account-trigger:hover, .municipal-account-actions button:hover, .municipal-panel-icon:hover,
-  .reporter-profile .secondary:hover, .reporter-logout-cancel:hover
+  .reporter-profile .secondary:hover, .reporter-logout-cancel:hover, .officer-team-member summary:hover,
+  .officer-team-form-actions button[type="button"]:hover
 ) { background: var(--municipal-highlight); }
 .municipal-workspace[data-theme="dark"] .reporter-nav button:not(.reporter-nav-row > button):is([aria-current], :hover) {
   background: var(--municipal-highlight);
@@ -518,6 +511,14 @@
 .municipal-workspace[data-theme="dark"] .municipal-connection { color: #ffca86; }
 .municipal-workspace[data-theme="dark"] .municipal-connection[data-online="true"] { color: #80e8b8; }
 .municipal-workspace[data-theme="dark"] .municipal-load-error { color: #ffaaa3; }
+.municipal-workspace[data-theme="dark"] .officer-team-layout :is(.officer-team-lead, .officer-team-details) {
+  border-color: var(--reporter-border);
+  background: var(--municipal-control);
+  color: inherit;
+}
+.municipal-workspace[data-theme="dark"] .officer-team-layout :is(.officer-team-remove, .error) { color: #ffaaa3; }
+.municipal-workspace[data-theme="dark"] .officer-team-remove { background: var(--municipal-control); }
+.municipal-workspace[data-theme="dark"] .officer-team-remove:hover { background: var(--municipal-highlight); }
 .municipal-workspace[data-theme="dark"] .municipal-map .mapboxgl-ctrl-attrib { background: #101a27ef; }
 .municipal-workspace[data-theme="dark"] .municipal-map .mapboxgl-ctrl-attrib a { color: #c2d1e3; }
 .municipal-workspace[data-theme="dark"] .reporter-detail-status[data-tone="sent"] { background: #192f49; color: #b7d7ff; }

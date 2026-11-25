@@ -1,13 +1,4 @@
-import { demoBarangay } from '../flood-reports/sanVicenteSamples.js';
-
-// Client-side fixtures for the demo. Laravel will own production authentication.
-const accounts = [
-  { fullName: 'Cesar Carlos', email: 'cesarcarlos@gmail.com', phone: '09000000005', role: 'MDRRMO Officer', initialHash: '925a44115c8907538941dbde555e8e94226b66307b761049c5221e9d7b573286' },
-  { fullName: 'Mark Jason Patron', email: 'markjasonpatron@gmail.com', phone: '09000000001', initialHash: '332380e74195a60f4df62aef6b1869540492112ab00217322ede4dea1926dbcc' },
-  { fullName: 'Nina Santos', email: 'ninasantos@example.test', phone: '09000000002', initialHash: 'e4a0915be1cb6eba70bdf32358ab05c6fcb3c91bb07e38d7f657fd61e0ad24a3' },
-  { fullName: 'Patrick Pioquinto', email: 'patrickpioquinto@gmail.com', phone: '09000000004', role: 'BDRRM Officer', initialHash: 'c5f71e11073a7245bb5ce15fcb72a9d66a069e5e0bb1d6790dd95344ab8e66b2' },
-  { fullName: 'Aljon Ken Fernandez', email: 'aljonkenfernandez@gmail.com', phone: '09000000003', initialHash: '5e2c3e9e303da226b679cb0b67fa008055654c3121a5cdd0810c7e3c5aa3edd4' },
-];
+import { demoAccounts as accounts, demoBarangay } from './demoAccounts.js';
 
 const sessionKey = 'floodintel.demo.reporter.session';
 const passwordKey = (email) => `floodintel.demo.password.${email}`;
@@ -44,19 +35,23 @@ function readAccount(account) {
   } catch {
     saved = null;
   }
+  // Profiles written by older demos also stored a copy of the original contact details.
+  const oldName = !saved?.contactVersion && saved?.fullName === account.previousName;
+  const oldPhone = !saved?.contactVersion && saved?.phone === account.previousPhone;
   return {
     id,
     role: account.role ?? 'Field Reporter',
+    barangay: account.barangay ?? demoBarangay,
     avatarColor: avatarColorFor(account),
-    fullName: saved?.fullName ?? account.fullName,
+    fullName: oldName ? account.fullName : saved?.fullName ?? account.fullName,
     email: saved?.email ?? account.email,
-    phone: saved?.phone ?? account.phone,
+    phone: oldPhone ? account.phone : saved?.phone ?? account.phone,
     passwordHash: saved?.passwordHash ?? localStorage.getItem(passwordKey(id)) ?? account.initialHash,
   };
 }
 
-function accountProfile({ id, fullName, email, phone, role, avatarColor }) {
-  return { id, fullName, email, phone, role, avatarColor, barangay: role === 'MDRRMO Officer' ? 'Apalit' : demoBarangay };
+function accountProfile({ id, fullName, email, phone, role, avatarColor, barangay }) {
+  return { id, fullName, email, phone, role, avatarColor, barangay };
 }
 
 function normalizePhone(phone) {
@@ -118,13 +113,17 @@ function checkUniqueContact({ email, phone }, existing) {
   if (existing.some((account) => account.phone === phone)) throw new Error('That mobile number is already in use.');
 }
 
-function requireOfficer() {
-  if (getSignedInAccount()?.role !== 'BDRRM Officer') throw new Error('Sign in as a BDRRM Officer to manage the team.');
+function requireOfficer(role) {
+  const manager = getSignedInAccount();
+  if (manager?.role !== role) throw new Error(`Sign in with a ${role} account to manage the team.`);
+  return manager;
 }
 
 export function listFieldReporters() {
-  requireOfficer();
-  return activeAccounts().map(readAccount).filter(({ role }) => role === 'Field Reporter').map(accountProfile);
+  const manager = requireOfficer('BDRRM Officer');
+  return activeAccounts().map(readAccount)
+    .filter(({ role, barangay }) => role === 'Field Reporter' && barangay === manager.barangay)
+    .map(accountProfile);
 }
 
 export function listBarangayOfficers() {
@@ -132,24 +131,44 @@ export function listBarangayOfficers() {
   return activeAccounts().map(readAccount).filter(({ role }) => role === 'BDRRM Officer').map(accountProfile);
 }
 
-export async function createFieldReporter({ fullName, email, phone, password }) {
-  requireOfficer();
+export function createFieldReporter(values) {
+  return createTeamAccount(values, 'Field Reporter', 'BDRRM Officer');
+}
+
+export function createBarangayOfficer(values) {
+  return createTeamAccount(values, 'BDRRM Officer', 'MDRRMO Officer');
+}
+
+async function createTeamAccount({ fullName, email, phone, password }, role, managerRole) {
+  const manager = requireOfficer(managerRole);
   const contact = reporterContact({ fullName, email, phone });
   if (password.length < 6) throw new Error('Enter at least 6 characters for the temporary password.');
   const initialHash = await digest(password);
-  requireOfficer();
+  if (requireOfficer(managerRole).id !== manager.id) throw new Error('Sign in again to create an account.');
   const team = readTeam();
   checkUniqueContact(contact, activeAccounts(team).map(readAccount));
   const avatarColor = avatarColors[Math.floor(Math.random() * avatarColors.length)];
-  team.created.push({ id: crypto.randomUUID(), ...contact, initialHash, avatarColor });
+  const barangay = role === 'Field Reporter' ? manager.barangay : demoBarangay;
+  team.created.push({ id: crypto.randomUUID(), ...contact, role, barangay, initialHash, avatarColor });
   localStorage.setItem(teamKey, JSON.stringify(team));
 }
 
 export function removeFieldReporter(id) {
-  requireOfficer();
+  removeTeamAccount(id, 'Field Reporter', 'BDRRM Officer');
+}
+
+export function removeBarangayOfficer(id) {
+  removeTeamAccount(id, 'BDRRM Officer', 'MDRRMO Officer');
+}
+
+function removeTeamAccount(id, role, managerRole) {
+  const manager = requireOfficer(managerRole);
   const team = readTeam();
   const account = activeAccounts(team).find((candidate) => accountId(candidate) === id);
-  if (!account || (account.role && account.role !== 'Field Reporter')) throw new Error('This Field Reporter is no longer on the team.');
+  if (!account || (account.role ?? 'Field Reporter') !== role ||
+    (role === 'Field Reporter' && (account.barangay ?? demoBarangay) !== manager.barangay)) {
+    throw new Error(`This ${role} is no longer on the team.`);
+  }
   if (!account.id) team.removed.push(id);
   team.created = team.created.filter((candidate) => candidate.id !== id);
   localStorage.setItem(teamKey, JSON.stringify(team));
@@ -179,9 +198,9 @@ export async function updateAccountProfile(id, { fullName, email, phone, current
   checkUniqueContact(contact, others);
 
   const updated = { id, role: current.role, ...contact, passwordHash: newHash ?? current.passwordHash };
-  localStorage.setItem(profileKey(id), JSON.stringify(updated));
+  localStorage.setItem(profileKey(id), JSON.stringify({ ...updated, contactVersion: 2 }));
   if (current.email !== contact.email || newHash) localStorage.removeItem(resetKey(id));
-  return accountProfile({ ...updated, avatarColor: current.avatarColor });
+  return accountProfile({ ...updated, avatarColor: current.avatarColor, barangay: current.barangay });
 }
 
 export async function requestPasswordReset(email, simulateFailure) {
@@ -219,7 +238,7 @@ export async function updatePassword(token, password, simulateFailure) {
   const account = findResetAccount(token);
   if (!account) throw new Error('This reset link is invalid or expired. Request a new link.');
   const id = accountId(account);
-  localStorage.setItem(profileKey(id), JSON.stringify({ ...readAccount(account), passwordHash: hash }));
+  localStorage.setItem(profileKey(id), JSON.stringify({ ...readAccount(account), passwordHash: hash, contactVersion: 2 }));
   localStorage.removeItem(resetKey(id));
   if (localStorage.getItem(sessionKey) === id) signOut();
 }

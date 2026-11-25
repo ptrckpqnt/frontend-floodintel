@@ -15,7 +15,9 @@ export default function FloodDepthMap({ loadButtonRef, ...props }) {
       </Suspense>
       <div className="municipal-map-legend">
         <strong>Reported flood depth</strong>
-        <ul>{depthBands.map(({ label, color }) => <li key={label}><span style={{ background: color }} />{label}</li>)}</ul>
+        <ul>{depthBands.map(({ label, color }) => <li key={label}>
+          <span aria-hidden="true" style={{ background: color }} />{label}
+        </li>)}</ul>
         <small>Measured locations only</small>
       </div>
     </> : <div className="municipal-map-placeholder">

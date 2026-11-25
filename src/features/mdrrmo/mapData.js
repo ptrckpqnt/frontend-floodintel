@@ -1,8 +1,8 @@
 export const depthBands = [
-  { min: 0, label: '0–29 cm', color: '#087bea' },
+  { min: 0, label: '0–29 cm', color: '#168447' },
   { min: 30, label: '30–59 cm', color: '#e59000' },
   { min: 60, label: '60–99 cm', color: '#e34717' },
-  { min: 100, label: '100+ cm', color: '#ad1a55' },
+  { min: 100, label: '100+ cm', color: '#d92222' },
 ];
 
 export function depthBand(depth) {

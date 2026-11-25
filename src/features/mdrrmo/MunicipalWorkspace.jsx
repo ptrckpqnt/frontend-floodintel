@@ -2,15 +2,15 @@ import React, { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import WorkspaceSidebar, { Icon, WorkspaceBrand } from '../../components/WorkspaceSidebar';
 import AccountAvatar from '../../components/AccountAvatar';
 import WorkspaceProfile from '../../components/WorkspaceProfile';
-import { listBarangayOfficers } from '../auth/authService';
+import { reportBarangays } from '../auth/demoAccounts';
+import OfficerTeam from '../bdrrmo/OfficerTeam';
 import ReportDetails from '../flood-reports/ReportDetails';
 import FloodDepthMap from './FloodDepthMap';
-import { canMap, hasCoordinates, reportsInWindow } from './mapData';
+import { canMap, depthBand, hasCoordinates, reportsInWindow } from './mapData';
 import './municipal.css';
 
 const navigation = [['map', 'Map'], ['reports', 'Reports'], ['priority', 'Priority']];
-const reportBarangays = ['Cansinala', 'Capalangan', 'San Vicente', 'Sulipan', 'Tabuyuc'];
-const panelTitles = { reports: 'Location Reports', priority: 'Priority', team: 'Team', profile: 'Profile' };
+const panelTitles = { reports: 'Location Reports', priority: 'Priority', team: 'BDRRM Officers', profile: 'Profile' };
 const priorityCategories = [
   { id: 'evacuation', label: 'Evacuation needed', empty: 'No evacuation requests in this time range.',
     select: (reports) => reports.filter(({ evacuationNeeded }) => evacuationNeeded) },
@@ -74,7 +74,7 @@ function AccountMenu({ account, onNavigate, onSignOut }) {
   const menu = useRef(null);
   const trigger = useRef(null);
   const actions = [
-    ['team', 'Team', () => onNavigate('team')],
+    ['team', panelTitles.team, () => onNavigate('team')],
     ['profile', 'Profile', () => onNavigate('profile')],
     ['logout', 'Sign Out', onSignOut],
   ];
@@ -114,34 +114,17 @@ function AccountMenu({ account, onNavigate, onSignOut }) {
   </details>;
 }
 
-function AccountDetails({ account }) {
-  return <dl className="municipal-account-details">
-    <div><dt>Name</dt><dd>{account.fullName}</dd></div>
-    <div><dt>Role</dt><dd>{account.role}</dd></div>
-    <div><dt>Email</dt><dd>{account.email}</dd></div>
-    <div><dt>Mobile Number</dt><dd>{account.phone}</dd></div>
-  </dl>;
-}
-
-function TeamDirectory() {
-  const [members] = useState(listBarangayOfficers);
-  return <div className="municipal-panel-body">
-    <h3>Barangay Officers</h3>
-    {members.length ? members.map((member) => <section className="reporter-card municipal-team-member" key={member.id}>
-      <h4>Brgy. {member.barangay}</h4>
-      <AccountDetails account={member} />
-    </section>) : <p>No barangay officers available.</p>}
-  </div>;
-}
-
 function LocationCard({ report, onSelect }) {
+  const { waterLevelCm } = report;
+  const band = Number.isFinite(waterLevelCm) && waterLevelCm >= 0 ? depthBand(waterLevelCm) : undefined;
   return <button type="button" className="municipal-location-card" onClick={() => onSelect(report)}>
     <Icon name="pin" />
     <span>
       <strong>{report.location}</strong>
       <small>{report.reporter.barangay} · {report.dateLabel}</small>
     </span>
-    <span className="municipal-location-depth">{report.waterLevel}</span>
+    <span className="municipal-location-depth"
+      style={band ? { color: band.color } : undefined}>{report.waterLevel}</span>
   </button>;
 }
 
@@ -162,6 +145,7 @@ export default function MunicipalWorkspace({ account, reports, onSignOut, onAcco
   const [panel, setPanel] = useState('map');
   const [collapsed, setCollapsed] = useState(false);
   const mobile = useSyncExternalStore(subscribeToMobileHeader, isMobileHeader, () => false);
+  const sidebarCollapsed = collapsed && !mobile;
   const mobileNavigation = useRef(null);
   const contentArea = useRef(null);
   const reportDrag = useRef(null);
@@ -173,6 +157,7 @@ export default function MunicipalWorkspace({ account, reports, onSignOut, onAcco
   const [search, setSearch] = useState('');
   const [barangay, setBarangay] = useState('');
   const [openSubnav, setOpenSubnav] = useState({ reports: false, priority: false });
+  const [collapsedSubnav, setCollapsedSubnav] = useState(null);
   const [priority, setPriority] = useState('');
   const [hours, setHours] = useState(0);
   const [now, setNow] = useState(Date.now);
@@ -227,10 +212,12 @@ export default function MunicipalWorkspace({ account, reports, onSignOut, onAcco
   }
 
   function submenu(section, label, content) {
-    const open = openSubnav[section];
+    const open = sidebarCollapsed ? collapsedSubnav === section : openSubnav[section];
     const id = `municipal-${section}-subnav`;
     return {
-      control: <button type="button" className="municipal-subnav-toggle" aria-expanded={open} aria-controls={id}
+      expanded: sidebarCollapsed ? open : undefined,
+      controls: sidebarCollapsed ? id : undefined,
+      control: !sidebarCollapsed && <button type="button" className="municipal-subnav-toggle" aria-expanded={open} aria-controls={id}
         aria-label={`${open ? 'Hide' : 'Show'} ${label}`}
         onClick={() => {
           if (!open && panel !== section) navigate(section);
@@ -273,13 +260,21 @@ export default function MunicipalWorkspace({ account, reports, onSignOut, onAcco
     setReportHeight(clampReportHeight(adjustment[event.key]));
   }
 
-  const sidebarCollapsed = collapsed && !mobile;
   const accountMenu = <AccountMenu account={account} onNavigate={navigate} onSignOut={onSignOut} />;
   const sidebar = <WorkspaceSidebar id="municipal-sidebar" account={account} avatarLetters={2} navigation={navigation} screen={panel}
       navigate={(nextPanel) => {
+        if (sidebarCollapsed && (nextPanel === 'reports' || nextPanel === 'priority')) {
+          setCollapsedSubnav((current) => current === nextPanel ? null : nextPanel);
+          if (panel !== nextPanel) navigate(nextPanel);
+          return;
+        }
+        setCollapsedSubnav(null);
         navigate(nextPanel);
         mobileNavigation.current?.close();
-      }} collapsed={sidebarCollapsed} showBrand={!mobile} onToggle={() => setCollapsed((current) => !current)}
+      }} collapsed={sidebarCollapsed} showBrand={!mobile} onToggle={() => {
+        setCollapsedSubnav(null);
+        setCollapsed((current) => !current);
+      }}
       subnavigation={{
         reports: submenu('reports', 'barangay shortcuts', reportBarangays.map((name) => <button type="button" key={name}
           aria-pressed={panel === 'reports' && barangay === name} onClick={() => openBarangayReports(name)}>{name}</button>)),
@@ -367,7 +362,7 @@ export default function MunicipalWorkspace({ account, reports, onSignOut, onAcco
           </button>
         </header>
         {panel === 'priority' && !selected && <PriorityReports reports={visible} category={priority} onSelect={openReport} />}
-        {panel === 'team' && <TeamDirectory />}
+        {panel === 'team' && <div className="municipal-panel-body"><OfficerTeam account={account} /></div>}
         {panel === 'profile' && <WorkspaceProfile account={account}
           onAccountUpdated={onAccountUpdated} avatarLetters={2} assignmentLabel="Municipality" />}
         {selected && <div className="municipal-panel-body municipal-report-detail">

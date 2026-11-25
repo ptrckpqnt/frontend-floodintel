@@ -1,16 +1,38 @@
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { demoMapCenter } from '../flood-reports/sanVicenteSamples';
-import { canMap, depthBand, hasCoordinates } from './mapData';
+import { demoMapCenter } from '../flood-reports/apalitSamples';
+import { canMap, depthBand, depthBands, hasCoordinates } from './mapData';
 
 const center = [demoMapCenter.longitude, demoMapCenter.latitude];
-const zoom = 14;
+const zoom = 12;
 const pitch = 30;
 const tiltPresets = [0, 30, 60];
 const sourceId = 'floodintel-depth';
 const pointLayer = 'floodintel-depth-points';
 const labelLayer = 'floodintel-depth-labels';
+const pinImageId = (min) => `depth-pin-${min}`;
+
+function registerPinImages(map) {
+  const pixelRatio = 2;
+  const canvas = document.createElement('canvas');
+  canvas.width = 32 * pixelRatio;
+  canvas.height = 40 * pixelRatio;
+  const context = canvas.getContext('2d');
+  context.scale(pixelRatio, pixelRatio);
+  const pin = new Path2D('M16 38C13 34 3 23 3 16a13 13 0 1 1 26 0c0 7-10 18-13 22Z');
+  context.lineWidth = 2;
+  context.lineJoin = 'round';
+
+  for (const { min, color } of depthBands) {
+    context.clearRect(0, 0, 32, 40);
+    context.fillStyle = color;
+    context.fill(pin);
+    context.strokeStyle = '#fff';
+    context.stroke(pin);
+    map.addImage(pinImageId(min), context.getImageData(0, 0, canvas.width, canvas.height), { pixelRatio });
+  }
+}
 
 function reportPoints(reports) {
   return {
@@ -18,7 +40,10 @@ function reportPoints(reports) {
     features: reports.filter(canMap).map((report) => ({
       type: 'Feature',
       geometry: { type: 'Point', coordinates: [report.longitude, report.latitude] },
-      properties: { id: report.id, color: depthBand(report.waterLevelCm).color, label: `${report.waterLevelCm} cm` },
+      properties: {
+        id: report.id, pinImage: pinImageId(depthBand(report.waterLevelCm).min),
+        label: `${report.waterLevelCm} cm`,
+      },
     })),
   };
 }
@@ -58,11 +83,14 @@ export default function MapboxDepthMap({ accessToken, reports, selected, onSelec
       }
     });
     map.once('load', () => {
+      registerPinImages(map);
       map.addSource(sourceId, { type: 'geojson', data: reportPoints(latest.current.reports) });
-      map.addLayer({ id: 'floodintel-depth-glow', type: 'circle', source: sourceId, slot: 'top',
-        paint: { 'circle-color': ['get', 'color'], 'circle-radius': 40, 'circle-blur': 0.85, 'circle-opacity': 0.65 } });
-      map.addLayer({ id: pointLayer, type: 'circle', source: sourceId, slot: 'top',
-        paint: { 'circle-color': ['get', 'color'], 'circle-radius': 12, 'circle-stroke-color': '#fff', 'circle-stroke-width': 2 } });
+      map.addLayer({ id: pointLayer, type: 'symbol', source: sourceId, slot: 'top',
+        layout: {
+          'icon-image': ['get', 'pinImage'], 'icon-size': 0.85, 'icon-anchor': 'bottom', 'icon-allow-overlap': true,
+          'icon-pitch-alignment': 'viewport', 'icon-rotation-alignment': 'viewport',
+        },
+        paint: { 'icon-emissive-strength': 1 } });
       map.addLayer({ id: labelLayer, type: 'symbol', source: sourceId, slot: 'top',
         layout: { 'text-field': ['get', 'label'], 'text-size': 12, 'text-offset': [0, 1.3], 'text-anchor': 'top' },
         paint: { 'text-color': '#101827', 'text-halo-color': '#fff', 'text-halo-width': 2 } });
@@ -73,10 +101,6 @@ export default function MapboxDepthMap({ accessToken, reports, selected, onSelec
       });
       map.on('mouseenter', pointLayer, () => { map.getCanvas().style.cursor = 'pointer'; });
       map.on('mouseleave', pointLayer, () => { map.getCanvas().style.cursor = ''; });
-      const sample = document.createElement('div');
-      sample.className = 'municipal-map-sample';
-      sample.textContent = 'Sample marker';
-      new mapboxgl.Marker({ element: sample, anchor: 'bottom' }).setLngLat([120.7525, 14.952]).addTo(map);
       setError('');
       setReady(true);
     });

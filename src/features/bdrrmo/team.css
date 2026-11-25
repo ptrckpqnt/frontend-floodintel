@@ -54,6 +54,7 @@
 .officer-team-member summary:hover { background: #f6faff; }
 .officer-team-member summary strong { display: block; font-size: .88rem; }
 .officer-team-member summary small { display: block; color: #536479; }
+.officer-team-barangay { color: var(--reporter-blue); font-weight: 700; }
 .officer-team-chevron { flex: none; margin-inline-start: auto; line-height: 0; color: #536479; transform: rotate(90deg); }
 .officer-team-member[open] .officer-team-chevron { transform: rotate(-90deg); }
 .officer-team-details { padding: 12px; border-top: 1px solid #b3d6ff; border-radius: 0 0 8px 8px; background: #edf5ff; font-size: .84rem; }

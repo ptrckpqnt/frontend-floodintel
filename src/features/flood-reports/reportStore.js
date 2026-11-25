@@ -1,23 +1,29 @@
-import { sampleReports, sampleSitReps } from './sanVicenteSamples.js';
+import { summarizeReports } from '../bdrrmo/sitRepSummary.js';
+import { sampleReports, sampleSitReps } from './apalitSamples.js';
 
-export const initialBoard = { reports: sampleReports, sitReps: sampleSitReps, version: 0, seedVersion: 2 };
+export const initialBoard = { reports: sampleReports, sitReps: sampleSitReps, version: 0, seedVersion: 3 };
 const previousSampleIds = new Set(['sample-aroma', 'sample-villena', 'sample-riverside']);
+const replacedSampleIds = new Set(sampleReports.map(({ id }) => id));
 
 export function withSampleReports(board) {
   if (!board) return initialBoard;
   if (board.seedVersion === initialBoard.seedVersion) return board;
   const removedReportIds = new Set(previousSampleIds);
   const reports = board.reports.filter((report) => {
-    if (report.isSample && report.reporter.barangay === 'Paligui') removedReportIds.add(report.id);
+    if (report.isSample && (report.reporter.barangay === 'Paligui' || replacedSampleIds.has(report.id))) {
+      removedReportIds.add(report.id);
+    }
     return !removedReportIds.has(report.id);
   });
   const removedEndorsements = new Set(board.sitReps
     .filter(({ barangay }) => barangay === 'Paligui')
     .flatMap(({ reportIds }) => reportIds ?? []));
-  const sitReps = board.sitReps.filter(({ barangay }) => barangay !== 'Paligui');
+  const sitReps = board.sitReps.filter(({ id, barangay, isSample }) =>
+    barangay !== 'Paligui' && !(isSample && id.startsWith('demo-sv-sitrep-')));
   const endorsed = new Set(sitReps.flatMap(({ reportIds }) => reportIds ?? []));
   const existingReports = new Set(reports.map(({ id }) => id));
   const existingSitReps = new Set(sitReps.map(({ id }) => id));
+  const retainedReports = new Map(reports.map((report) => [report.id, report]));
 
   return {
     ...board,
@@ -30,9 +36,12 @@ export function withSampleReports(board) {
     ]
       .sort((a, b) => b.submittedAt - a.submittedAt),
     sitReps: [
-      ...sitReps.map((entry) => entry.reportIds?.some((id) => removedReportIds.has(id))
-        ? { ...entry, reportIds: entry.reportIds.filter((id) => !removedReportIds.has(id)) }
-        : entry),
+      ...sitReps.map((entry) => {
+        if (!entry.reportIds?.some((id) => removedReportIds.has(id))) return entry;
+        const reportIds = entry.reportIds.filter((id) => !removedReportIds.has(id));
+        const linkedReports = reportIds.map((id) => retainedReports.get(id)).filter(Boolean);
+        return { ...entry, reportIds, ...summarizeReports(linkedReports) };
+      }),
       ...sampleSitReps.filter(({ id }) => !existingSitReps.has(id)),
     ].sort((a, b) => b.createdAt - a.createdAt),
   };
