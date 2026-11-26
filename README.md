@@ -11,7 +11,8 @@ The React demo opens with the authentication flow from the Figma draft. Signing 
 - `src/styles/base.css` contains shared page and form styles. The authentication and Field Reporter styles live with their features.
 
 - `src/features/bdrrmo/` contains the BDRRM Officer dashboard and its demo views.
-- `src/components/WorkspaceSidebar.jsx` provides the navigation and branding used by both workspaces.
+- `src/features/mdrrmo/` contains the municipal map, location reports, and Priority views.
+- `src/components/WorkspaceSidebar.jsx` provides shared navigation and branding.
 
 ## Open in VS Code
 
@@ -43,6 +44,20 @@ Sample sign-in and password changes are stored in the browser by account. Clear 
 - Enter water level and affected households, choose a sample image, and capture location.
 - Turn on **Simulate a server failure**, submit, and check the error. Turn it off and retry. The confirmation is a demo response.
 - Use synthetic data. The demo service does not upload the image or coordinates.
+
+## Try the MDRRMO workspace
+
+Sign in with the MDRRMO demo account using mobile number `09000000005` and its demo password. Submit a synthetic Field Reporter report with GPS coordinates, then use the BDRRMO account to accept it and include it in a SitRep endorsed to MDRRMO. Switch to the MDRRMO account at the same site address in the same browser to see the report on the map and in Location Reports. The Priority view highlights evacuation needs, reported vulnerable residents, and the deepest reported locations.
+
+To enable the map, copy `.env.example` to `.env.local` in the project root and set `VITE_MAPBOX_ACCESS_TOKEN` to a public Mapbox token starting with `pk.`. Restart Vite after editing the file. In Windows PowerShell, run `npm.cmd run dev` and open the local address it prints. Sign in as MDRRMO and select **Load map**. Mapbox initializes only after that click. The map opens over Apalit with a **Sample marker** and shows depth for endorsed reports with GPS coordinates.
+
+The Mapbox basemap requires internet access and a WebGL 2 browser. The public token is included in the browser build. Shared reporting across devices requires a backend.
+
+## San Vicente sample reports
+
+The demo starts with five sample reports each for Mark Jason Patron, Aljon Ken Fernandez, and Nina Santos. Twelve are included in three endorsed SitReps, two await BDRRMO review, and one needs correction. Nina's demo sign-in is `ninasantos@example.test` or `09000000002`, with password `ninasantos`.
+
+The scenarios and measurements are fictional. Locations use approximate pins around real landmarks in [San Vicente, Apalit](https://www.kapekulitan.region3.dilg.gov.ph/sikap-barangay-hub/lgus/apalit/ap-san-vicente/ap-geographic-san-vicente). Each sample report has its own generated flood illustration, bundled with the demo.
 
 The offline queue, connection indicator, PWA installation, hosting, and Laravel integration are later milestones. See [FloodIntel-Frontend-Plan.md](FloodIntel-Frontend-Plan.md).
 

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Icon } from '../../components/WorkspaceSidebar';
 import { reportStatuses } from './reportData';
-import sampleFloodEvidence from './sample-flood-evidence.jpg';
+import SampleFloodPhoto from './SampleFloodPhoto';
 
 const fullReportDate = new Intl.DateTimeFormat('en-PH', {
   dateStyle: 'full', timeStyle: 'short',
@@ -11,7 +11,7 @@ function DetailField({ label, children }) {
   return <div><dt>{label}</dt><dd>{children ?? 'Not recorded'}</dd></div>;
 }
 
-export default function ReportDetails({ report, allowCall = false }) {
+export default function ReportDetails({ report, allowCall = false, showStatus = true, onLocate }) {
   const reporter = report.reporter;
   const [photoUrl, setPhotoUrl] = useState('');
   const coordinates = Number.isFinite(report.latitude) && Number.isFinite(report.longitude)
@@ -28,26 +28,29 @@ export default function ReportDetails({ report, allowCall = false }) {
   }, [report.photo]);
 
   return <div className="reporter-detail-content">
-    <section className="reporter-detail-status" data-tone={status?.tone}>
+    {showStatus && <section className="reporter-detail-status" data-tone={status?.tone}>
       {status && <Icon name={status.icon} />}
       <div><h2>Status: {report.status}</h2>
         {status && <p>{report.reviewNote || status.explanation}</p>}
+        {report.isSample && <p>Sample incident and measurements.</p>}
       </div>
-    </section>
+    </section>}
     <div className="reporter-detail-grid">
       <section className="reporter-card reporter-detail-card">
         <h2>Photo Evidence</h2>
         {photoUrl && <img className="reporter-detail-photo" src={photoUrl} alt="Submitted flood evidence" />}
-        {!report.photo && (report.id === 'sample-aroma' ? <>
-          <img className="reporter-detail-photo" src={sampleFloodEvidence} alt="Sample photo of a flooded street" />
-          <p>Sample photo</p>
-        </> : <p>No photo attached.</p>)}
+        {!report.photo && (report.isSample
+          ? <SampleFloodPhoto reportId={report.id} />
+          : <p>No photo attached.</p>)}
+        {!showStatus && report.isSample && <p>Sample incident and measurements.</p>}
       </section>
       <section className="reporter-card reporter-detail-card">
         <div className="reporter-card-heading">
           <h2><Icon name="pin" /> Location</h2>
-          {coordinates && <a className="reporter-map-link" target="_blank" rel="noopener noreferrer"
-            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(coordinates)}`}>Open Maps</a>}
+          {coordinates && (onLocate
+            ? <button type="button" className="reporter-map-link municipal-locate-button" onClick={onLocate}>View on map</button>
+            : <a className="reporter-map-link" target="_blank" rel="noopener noreferrer"
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(coordinates)}`}>Open Maps</a>)}
         </div>
         <dl>
           <DetailField label="Primary Location">{report.location}</DetailField>
