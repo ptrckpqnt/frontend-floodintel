@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import WorkspaceSidebar, { Icon, WorkspaceBrand } from '../../components/WorkspaceSidebar';
 import AccountAvatar from '../../components/AccountAvatar';
+import ConnectionIndicator from '../../components/ConnectionIndicator';
 import WorkspaceProfile from '../../components/WorkspaceProfile';
 import { reportBarangays } from '../auth/demoAccounts';
 import OfficerTeam from '../bdrrmo/OfficerTeam';
@@ -23,6 +24,7 @@ const priorityCategories = [
 const timeOptions = { timeZone: 'Asia/Manila' };
 const clockTime = new Intl.DateTimeFormat('en-PH', { ...timeOptions, hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' });
 const clockDate = new Intl.DateTimeFormat('en-PH', { ...timeOptions, weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+const snapshotDate = new Intl.DateTimeFormat('en-PH', { ...timeOptions, dateStyle: 'medium', timeStyle: 'short' });
 const themeKey = 'floodintel.mdrrmo.theme';
 const mobileHeaderQuery = '(width < 900px)';
 const minReportHeight = 28;
@@ -48,26 +50,6 @@ function readTheme() {
   } catch {
     return 'light';
   }
-}
-
-function ConnectionIndicator() {
-  const [online, setOnline] = useState(() => navigator.onLine);
-
-  useEffect(() => {
-    const sync = () => setOnline(navigator.onLine);
-    window.addEventListener('online', sync);
-    window.addEventListener('offline', sync);
-    sync();
-    return () => {
-      window.removeEventListener('online', sync);
-      window.removeEventListener('offline', sync);
-    };
-  }, []);
-
-  return <span className="municipal-connection" data-online={online} role="status">
-    <span className="municipal-connection-dot" aria-hidden="true" />
-    {online ? 'Online' : 'Offline'}
-  </span>;
 }
 
 function AccountMenu({ account, onNavigate, onSignOut }) {
@@ -141,8 +123,8 @@ function PriorityReports({ reports, category, onSelect }) {
   </div>;
 }
 
-export default function MunicipalWorkspace({ account, reports, onSignOut, onAccountUpdated, loadError }) {
-  const [panel, setPanel] = useState('map');
+export default function MunicipalWorkspace({ account, reports, onSignOut, onAccountUpdated, loadError, online, snapshotAt }) {
+  const [panel, setPanel] = useState(() => online ? 'map' : 'reports');
   const [collapsed, setCollapsed] = useState(false);
   const mobile = useSyncExternalStore(subscribeToMobileHeader, isMobileHeader, () => false);
   const sidebarCollapsed = collapsed && !mobile;
@@ -173,9 +155,12 @@ export default function MunicipalWorkspace({ account, reports, onSignOut, onAcco
   const priorityTitle = priorityCategories.find(({ id }) => id === priority)?.label ?? panelTitles.priority;
   const listTitle = panel === 'reports' ? reportTitle : panel === 'priority' ? priorityTitle : panelTitles[panel];
   const panelTitle = selected ? 'Report Details' : listTitle;
-  const splitView = panel === 'reports' || panel === 'priority';
+  const splitView = online && (panel === 'reports' || panel === 'priority');
   const showMap = panel === 'map' || splitView;
   const resizableReport = mobile && splitView;
+  const savedDate = !online && snapshotAt && <small className="municipal-snapshot-date">
+    Reports last saved <time dateTime={new Date(snapshotAt).toISOString()}>{snapshotDate.format(snapshotAt)} PHT</time>
+  </small>;
   const query = search.trim().toLowerCase();
   const barangayReports = visible.filter((report) => !barangay || report.reporter.barangay === barangay);
   const matches = barangayReports.filter((report) =>
@@ -263,6 +248,10 @@ export default function MunicipalWorkspace({ account, reports, onSignOut, onAcco
   }
 
   const accountMenu = <AccountMenu account={account} onNavigate={navigate} onSignOut={onSignOut} />;
+  const connection = <ConnectionIndicator offlineHelp={<>
+    <p>You can browse saved situation reports, report details, and Priority while offline.</p>
+    <p>Reports refresh automatically when you reconnect. The live map and account changes require a connection.</p>
+  </>} />;
   const sidebar = <WorkspaceSidebar id="municipal-sidebar" account={account} avatarLetters={2} navigation={navigation} screen={panel}
       showNavigationTitles={!mobile}
       navigate={(nextPanel) => {
@@ -300,7 +289,7 @@ export default function MunicipalWorkspace({ account, reports, onSignOut, onAcco
         <span>{clockDate.format(now)}</span>
       </time>}
       <div className="municipal-header-actions">
-        {mobile && <ConnectionIndicator />}
+        {mobile && connection}
         <button type="button" className="municipal-theme-toggle" onClick={toggleTheme}
         aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
         title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}>
@@ -310,7 +299,7 @@ export default function MunicipalWorkspace({ account, reports, onSignOut, onAcco
             : <path d="M20.8 15.2A8.9 8.9 0 0 1 8.8 3.2a9 9 0 1 0 12 12Z" />}
         </svg>
         </button>
-        {mobile ? accountMenu : <ConnectionIndicator />}
+        {mobile ? accountMenu : connection}
       </div>
     </header>
     {mobile && <dialog id="municipal-mobile-navigation" className="municipal-mobile-navigation" ref={mobileNavigation}
@@ -338,11 +327,14 @@ export default function MunicipalWorkspace({ account, reports, onSignOut, onAcco
               <option value={168}>Last 7 days</option>
             </select>
           </label>
-          <span>{reports.length ? `${visible.filter(canMap).length} mapped of ${visible.length} reports`
+          <span>{!online ? `${visible.length} saved reports`
+            : reports.length ? `${visible.filter(canMap).length} mapped of ${visible.length} reports`
             : 'Waiting for a BDRRMO-endorsed SitRep'}</span>
+          {savedDate}
         </div>
         {loadError && <p className="municipal-load-error" role="alert">{loadError}</p>}
-        <FloodDepthMap reports={visible} selected={selected} onSelect={openReport} theme={theme}
+        <FloodDepthMap online={online} onBrowseReports={() => navigate('reports')}
+          reports={visible} selected={selected} onSelect={openReport} theme={theme}
           focusRequest={mapFocusRequest} loadButtonRef={loadMapButton} />
       </div>
       {panel !== 'map' && <aside id="municipal-side-panel" className="municipal-panel" aria-label={panelTitle}>
@@ -358,20 +350,26 @@ export default function MunicipalWorkspace({ account, reports, onSignOut, onAcco
               aria-label={`Back to ${listTitle}`} onClick={() => setSelectedId(null)}>
               <Icon name="back" />
             </button>}
-            <h2>{panelTitle}</h2>
+            <div>
+              <h2>{panelTitle}</h2>
+              {(panel === 'reports' || panel === 'priority') && savedDate}
+            </div>
           </div>
           <button type="button" className="municipal-panel-icon" aria-label={showMap ? 'Close panel' : 'Return to map'} onClick={() => navigate('map')}>
             <Icon name="close" />
           </button>
         </header>
+        {!showMap && loadError && <p className="municipal-load-error" role="alert">{loadError}</p>}
         {panel === 'priority' && !selected && <PriorityReports reports={visible} category={priority} onSelect={openReport} />}
-        {panel === 'team' && <div className="municipal-panel-body"><OfficerTeam account={account} inlineAddButton={!mobile} /></div>}
+        {panel === 'team' && <div className="municipal-panel-body">
+          <OfficerTeam account={account} inlineAddButton={!mobile} readOnly={!online} />
+        </div>}
         {panel === 'profile' && <WorkspaceProfile account={account}
-          onAccountUpdated={onAccountUpdated} avatarLetters={2} assignmentLabel="Municipality" />}
+          onAccountUpdated={onAccountUpdated} avatarLetters={2} assignmentLabel="Municipality" readOnly={!online} />}
         {selected && <div className="municipal-panel-body municipal-report-detail">
           <h3>{selected.location}</h3>
           {!hasCoordinates(selected) && <p>GPS coordinates are unavailable for this report.</p>}
-          <ReportDetails key={selected.id} report={selected} allowCall showStatus={false} onLocate={() => {
+          <ReportDetails key={selected.id} report={selected} allowCall showStatus={false} showMapLink={online} onLocate={() => {
             setMapFocusRequest((request) => request + 1);
             loadMapButton.current?.focus();
           }} />
@@ -385,7 +383,8 @@ export default function MunicipalWorkspace({ account, reports, onSignOut, onAcco
           <p className="municipal-results" role="status">{matches.length} of {barangayReports.length} reports</p>
           {matches.length ? matches.map((report) => <LocationCard key={report.id} report={report} onSelect={openReport} />)
             : <p>{barangay ? `No matching endorsed reports for ${barangay}.`
-              : reports.length ? 'No reports match the current filters.' : 'No BDRRMO-endorsed reports yet.'}</p>}
+              : reports.length ? 'No reports match the current filters.'
+                : online ? 'No BDRRMO-endorsed reports yet.' : 'No endorsed reports have been saved for offline viewing.'}</p>}
         </div>}
       </aside>}
     </main>

@@ -3,7 +3,7 @@ import AccountAvatar from './AccountAvatar';
 import EditAccountProfile from './EditAccountProfile';
 import { Icon } from './WorkspaceSidebar';
 
-export default function WorkspaceProfile({ account, onSignOut, onAccountUpdated, avatarLetters, assignmentLabel = 'Barangay Assignment' }) {
+export default function WorkspaceProfile({ account, onSignOut, onAccountUpdated, avatarLetters, assignmentLabel = 'Barangay Assignment', connection, readOnly = false }) {
   const confirmation = useRef(null);
   const cancel = useRef(null);
   const editDialog = useRef(null);
@@ -31,9 +31,10 @@ export default function WorkspaceProfile({ account, onSignOut, onAccountUpdated,
       <div className="reporter-profile-heading">
         <AccountAvatar account={account} className="reporter-profile-avatar" letters={avatarLetters} />
         <h1>{account.fullName}</h1>
+        {connection}
       </div>
       <div className="reporter-profile-actions">
-        <button className="secondary reporter-edit-profile-button" type="button" onClick={openEditor}>Edit Profile</button>
+        {!readOnly && <button className="secondary reporter-edit-profile-button" type="button" onClick={openEditor}>Edit Profile</button>}
         {onSignOut && <button className="reporter-profile-logout" type="button" onClick={confirmSignOut}>Log Out</button>}
       </div>
     </div>
@@ -59,10 +60,10 @@ export default function WorkspaceProfile({ account, onSignOut, onAccountUpdated,
       <button type="button" className="reporter-profile-logout" onClick={onSignOut}>Sign Out</button>
       <button ref={cancel} className="reporter-logout-cancel" type="button" onClick={() => confirmation.current.close()}>Cancel</button>
     </dialog>}
-    <dialog ref={editDialog} className="reporter-edit-dialog" aria-labelledby="reporter-edit-title"
+    {!readOnly && <dialog ref={editDialog} className="reporter-edit-dialog" aria-labelledby="reporter-edit-title"
       onClose={() => setEditVersion((previous) => previous + 1)}>
       <EditAccountProfile key={editVersion} account={account} onSaved={saveProfile}
         onCancel={() => editDialog.current.close()} />
-    </dialog>
+    </dialog>}
   </section>;
 }

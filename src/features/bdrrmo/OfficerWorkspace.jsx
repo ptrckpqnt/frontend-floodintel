@@ -1,13 +1,19 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import WorkspaceSidebar, { Icon } from '../../components/WorkspaceSidebar';
 import WorkspaceHeader from '../../components/WorkspaceHeader';
+import ConnectionIndicator from '../../components/ConnectionIndicator';
 import WorkspaceProfile from '../../components/WorkspaceProfile';
 import MdrrmoHotlineLink from '../../components/MdrrmoHotlineLink';
+import { getSignedInAccount } from '../auth/authService';
 import OfficerInbox from './OfficerInbox';
 import OfficerReportReview from './OfficerReportReview';
 import OfficerTeam from './OfficerTeam';
 import { NewSitRep, SitRepList } from './OfficerSitReps';
 import { RecentReports } from '../flood-reports/ReportCards';
+import { pendingEndorsement, pendingSync } from '../flood-reports/reportData';
+import { endorseQueuedSitReps } from '../flood-reports/reportStore';
+import useQueueSync from '../flood-reports/useQueueSync';
+import QueueSyncNotice from '../flood-reports/QueueSyncNotice';
 import './officer.css';
 
 const navigation = [['home', 'Home'], ['inbox', 'Inbox'], ['reports', 'SitReps'], ['team', 'Team'], ['profile', 'Profile']];
@@ -53,15 +59,30 @@ function Dashboard({ reports, sentCount, onInbox, onSelect, onNewSitRep }) {
   </>;
 }
 
-export default function OfficerWorkspace({ account, onSignOut, onAccountUpdated, board, updateBoard }) {
-  const reports = board.reports.filter((report) => report.reporter.barangay === account.barangay);
+export default function OfficerWorkspace({ account, onSignOut, onAccountUpdated, board, updateBoard, online }) {
+  const reports = board.reports.filter((report) => report.status !== pendingSync && report.reporter.barangay === account.barangay);
   const sitReps = board.sitReps.filter((entry) => entry.barangay === account.barangay);
   const [screen, setScreen] = useState('home');
   const [inboxStatus, setInboxStatus] = useState('');
   const [selectedId, setSelectedId] = useState(null);
   const [editingDraft, setEditingDraft] = useState(false);
-  const [endorsementMessage, setEndorsementMessage] = useState('');
+  const [lastEndorsementId, setLastEndorsementId] = useState(null);
   const selected = reports.find((report) => report.id === selectedId);
+  const queuedCount = sitReps.filter(({ queued }) => queued).length;
+  const syncEndorsements = useCallback(() => updateBoard((current) =>
+    navigator.onLine && getSignedInAccount()?.id === account.id
+      ? endorseQueuedSitReps(current, account.barangay)
+      : current), [account.id, account.barangay, updateBoard]);
+  const queueSync = useQueueSync({ online, count: queuedCount, sync: syncEndorsements });
+  const lastEndorsement = sitReps.find(({ id }) => id === lastEndorsementId);
+  const endorsementMessage = lastEndorsement && (lastEndorsement.queued
+    ? 'SitRep saved on this device. It will be endorsed when you reconnect.'
+    : 'SitRep endorsed in this browser demo.');
+  const connection = <ConnectionIndicator offlineHelp={<>
+    <p>You can review saved reports and queue SitRep endorsements while offline.</p>
+    <p>Queued SitReps reach the MDRRMO demo in this browser when you reconnect with the BDRRMO workspace open. Keep this browser’s site data until the queue clears.</p>
+    {queuedCount > 0 && <p role="status">{queuedCount} pending sync.</p>}
+  </>} />;
 
   function selectReport(report) {
     setSelectedId(report?.id ?? null);
@@ -83,7 +104,7 @@ export default function OfficerWorkspace({ account, onSignOut, onAccountUpdated,
     setSelectedId(null);
     setInboxStatus('');
     setEditingDraft(false);
-    setEndorsementMessage('');
+    setLastEndorsementId(null);
     setScreen(nextScreen);
   }
 
@@ -103,9 +124,9 @@ export default function OfficerWorkspace({ account, onSignOut, onAccountUpdated,
     window.scrollTo(0, 0);
   }
 
-  async function endorseSitRep(reportIds, summary) {
-    const id = crypto.randomUUID();
+  async function endorseSitRep(id, reportIds, summary) {
     await updateBoard((current) => {
+      if (current.sitReps.some((entry) => entry.id === id)) return current;
       const selected = current.reports.filter((report) => reportIds.includes(report.id) &&
         report.status === 'Accepted' && report.reporter.barangay === account.barangay);
       if (!selected.length || selected.length !== reportIds.length) {
@@ -116,13 +137,15 @@ export default function OfficerWorkspace({ account, onSignOut, onAccountUpdated,
         return Number.isSafeInteger(number) ? Math.max(highest, number) : highest;
       }, 591672);
       const reference = String(lastReference + 1);
-      const entry = { ...summary, id, reference, reportIds, createdAt: Date.now(), author: account.fullName, barangay: account.barangay };
+      const queued = !navigator.onLine;
+      const entry = { ...summary, id, reference, reportIds, queued, createdAt: Date.now(), author: account.fullName, barangay: account.barangay };
+      const status = queued ? pendingEndorsement : 'In SitRep';
       return {
-        reports: current.reports.map((report) => reportIds.includes(report.id) ? { ...report, status: 'In SitRep' } : report),
+        reports: current.reports.map((report) => reportIds.includes(report.id) ? { ...report, status } : report),
         sitReps: [entry, ...current.sitReps],
       };
     });
-    setEndorsementMessage('SitRep endorsed in this browser demo.');
+    setLastEndorsementId(id);
     setEditingDraft(false);
     window.scrollTo(0, 0);
   }
@@ -130,21 +153,22 @@ export default function OfficerWorkspace({ account, onSignOut, onAccountUpdated,
   return <div className="reporter-workspace officer-workspace">
     <WorkspaceSidebar account={account} avatarLetters={2} navigation={navigation} screen={screen} navigate={navigate} />
     <main className="reporter-main">
+      <QueueSyncNotice {...queueSync} />
       {screen === 'inbox' && <OfficerInbox reports={reports} barangay={account.barangay} status={inboxStatus}
-        onStatusChange={setInboxStatus} selected={selected} onSelect={selectReport} />}
+        onStatusChange={setInboxStatus} selected={selected} onSelect={selectReport} connection={connection} />}
       {screen === 'inbox' && selected && <OfficerReportReview key={selected.id} report={selected}
-        onBack={() => selectReport(null)} onDecision={recordDecision} />}
+        onBack={() => selectReport(null)} onDecision={recordDecision} connection={connection} />}
       {screen === 'profile' && <WorkspaceProfile account={account} onSignOut={onSignOut}
-        onAccountUpdated={onAccountUpdated} avatarLetters={2} />}
+        onAccountUpdated={onAccountUpdated} avatarLetters={2} connection={connection} />}
       {screen === 'reports' && (editingDraft
         ? <NewSitRep reports={reports.filter(({ status }) => status === 'Accepted')} account={account}
-          onBack={() => navigate('reports')} onEndorse={endorseSitRep} />
-        : <SitRepList sitReps={sitReps} barangay={account.barangay} onCreate={newSitRep} message={endorsementMessage} />)}
+          onBack={() => navigate('reports')} onEndorse={endorseSitRep} connection={connection} online={online} />
+        : <SitRepList sitReps={sitReps} barangay={account.barangay} onCreate={newSitRep} message={endorsementMessage} connection={connection} />)}
       {(screen === 'home' || screen === 'team') && <>
         <WorkspaceHeader account={account} title={screen === 'team' ? 'Manage Team' : undefined}
-          subtitle={screen === 'team' ? 'Field reporters' : undefined} />
+          subtitle={screen === 'team' ? 'Field reporters' : undefined} connection={connection} />
         <div className="reporter-home-body">
-          {screen === 'home' && <Dashboard reports={reports} sentCount={sitReps.length}
+          {screen === 'home' && <Dashboard reports={reports} sentCount={sitReps.length - queuedCount}
             onInbox={openInbox} onSelect={openReport} onNewSitRep={newSitRep} />}
           {screen === 'team' && <OfficerTeam account={account} />}
         </div>

@@ -1,15 +1,17 @@
 import React, { useRef, useState } from 'react';
 import WorkspaceSidebar, { Icon } from '../../components/WorkspaceSidebar';
 import WorkspaceHeader from '../../components/WorkspaceHeader';
+import ConnectionIndicator from '../../components/ConnectionIndicator';
 import WorkspaceProfile from '../../components/WorkspaceProfile';
 import MdrrmoHotlineLink from '../../components/MdrrmoHotlineLink';
 import ReportDetails from '../flood-reports/ReportDetails';
+import QueueSyncNotice from '../flood-reports/QueueSyncNotice';
 import { RecentReports, ReportHistoryCard } from '../flood-reports/ReportCards';
-import { reportStatuses } from '../flood-reports/reportData';
+import { pendingSync, reportStatuses } from '../flood-reports/reportData';
 
 const navigation = [['home', 'Home'], ['reports', 'My Reports'], ['submit', 'Submit'], ['profile', 'Profile']];
 
-function ReportHistory({ reports, onBack, selected, fromHome, onSelect, reporter }) {
+function ReportHistory({ reports, onBack, selected, fromHome, onSelect, reporter, connection }) {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const query = search.trim().toLowerCase();
@@ -26,8 +28,11 @@ function ReportHistory({ reports, onBack, selected, fromHome, onSelect, reporter
           {selected && !fromHome ? 'Back to Report History' : 'Back to Home'}
         </button>
         <div>
-          <h1 id="report-history-title" tabIndex="-1">{selected ? 'Report Details' : 'Report History'}</h1>
-          <p>{selected ? `Report ID: ${selected.id}` : 'View all your submitted reports'}</p>
+          <div className="workspace-title-row">
+            <h1 id="report-history-title" tabIndex="-1">{selected ? 'Report Details' : 'Report History'}</h1>
+            {connection}
+          </div>
+          <p>{selected ? `Report ID: ${selected.id}` : 'View your submitted and offline reports'}</p>
         </div>
       </div>
       {!selected && <div className="reporter-history-controls" role="group" aria-label="Filter reports">
@@ -62,12 +67,13 @@ function ReportHistory({ reports, onBack, selected, fromHome, onSelect, reporter
   </section>;
 }
 
-function ReporterHome({ reports, navigate, mobileCapture, onSelectReport, reporter }) {
+function ReporterHome({ reports, navigate, mobileCapture, onSelectReport, reporter, connection }) {
+  const submittedReports = reports.filter(({ status }) => status !== pendingSync);
   const stats = [
-    ['Total Submitted', reports.length, 'reports'],
+    ['Total Submitted', submittedReports.length, 'reports'],
     ['Accepted', reports.filter(({ status }) => status === 'Accepted').length, 'accepted'],
     ['Awaiting Review', reports.filter(({ status }) => status === 'Awaiting Review').length, 'waiting'],
-    ['This Week', reports.filter(({ submittedAt }) => {
+    ['This Week', submittedReports.filter(({ submittedAt }) => {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       today.setDate(today.getDate() - (today.getDay() + 6) % 7);
@@ -75,7 +81,7 @@ function ReporterHome({ reports, navigate, mobileCapture, onSelectReport, report
     }).length, 'calendar'],
   ];
   return <>
-    <WorkspaceHeader account={reporter} />
+    <WorkspaceHeader account={reporter} connection={connection} />
     <div className="reporter-home-body">
       <dl className="reporter-stats">
         {stats.map(([label, value, icon]) => <div className={`reporter-stat reporter-stat-${icon}`} key={label}>
@@ -91,7 +97,7 @@ function ReporterHome({ reports, navigate, mobileCapture, onSelectReport, report
             <h2>Recent Reports</h2>
             <button className="reporter-text-button reporter-view-all" type="button" onClick={() => navigate('reports')}>View All Reports</button>
           </div>
-          <p>Your latest submissions</p>
+          <p>Your latest reports</p>
           <RecentReports reports={reports.slice(0, 5)} onSelect={onSelectReport} />
         </section>
         <aside className="reporter-hotline">
@@ -103,12 +109,17 @@ function ReporterHome({ reports, navigate, mobileCapture, onSelectReport, report
   </>;
 }
 
-export default function ReporterWorkspace({ onSignOut, renderReportForm, reporter, onReporterUpdated, reports, onSubmitReport }) {
+export default function ReporterWorkspace({ onSignOut, renderReportForm, reporter, onReporterUpdated, reports, onSubmitReport, online, pendingCount, queueSync }) {
   const [screen, setScreen] = useState('home');
   const [selectedReport, setSelectedReport] = useState(null);
   const [photo, setPhoto] = useState(null);
   const [photoError, setPhotoError] = useState('');
   const photoPicker = useRef(null);
+  const connection = <ConnectionIndicator offlineHelp={<>
+    <p>You can view saved reports and save new reports with photos on this device. If GPS is unavailable, enter the general area.</p>
+    <p>Pending reports move to the demo inbox in this browser when you reconnect with FloodIntel open. Keep this browser’s site data until the queue clears.</p>
+    {pendingCount > 0 && <p role="status">{pendingCount} pending sync.</p>}
+  </>} />;
   const mobileCapture = typeof navigator !== 'undefined' && (
     navigator.userAgentData?.mobile === true ||
     /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
@@ -155,17 +166,21 @@ export default function ReporterWorkspace({ onSignOut, renderReportForm, reporte
     <WorkspaceSidebar account={reporter} navigation={navigation} screen={screen} navigate={navigate}
       mobileSubmitLabel={mobileCapture ? 'Take Photo' : 'New Report'} />
     <main className="reporter-main">
+      <QueueSyncNotice {...queueSync} />
       {screen === 'home' && <ReporterHome reports={reports} navigate={navigate} mobileCapture={mobileCapture}
-        onSelectReport={selectReport} reporter={reporter} />}
+        onSelectReport={selectReport} reporter={reporter} connection={connection} />}
       {screen === 'reports' && <ReportHistory reports={reports} onBack={() => navigate('home')}
-        selected={reports.find(({ id }) => id === selectedReport?.id)} fromHome={selectedReport?.fromHome} onSelect={selectReport} reporter={reporter} />}
+        selected={reports.find(({ id }) => id === selectedReport?.id)} fromHome={selectedReport?.fromHome} onSelect={selectReport}
+        reporter={reporter} connection={connection} />}
       {screen === 'submit' && renderReportForm({
-        onSubmitted: onSubmitReport, onBack: () => navigate('home'), photo, photoError,
+        onSubmitted: onSubmitReport, onBack: () => navigate('home'), photo, photoError, online, connection,
+        isPendingReport: (id) => reports.find((report) => report.id === id)?.status === pendingSync,
         onViewReport: (id) => selectReport(reports.find((report) => report.id === id)),
         mobileCapture, onChoosePhoto: openPhotoPicker,
         onClearPhoto: () => { setPhoto(null); setPhotoError(''); },
       })}
-      {screen === 'profile' && <WorkspaceProfile account={reporter} onSignOut={onSignOut} onAccountUpdated={onReporterUpdated} />}
+      {screen === 'profile' && <WorkspaceProfile account={reporter} onSignOut={onSignOut} onAccountUpdated={onReporterUpdated}
+        connection={connection} />}
     </main>
   </div>;
 }

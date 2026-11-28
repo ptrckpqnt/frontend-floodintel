@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Icon } from '../../components/WorkspaceSidebar';
 import { summarizeReports } from './sitRepSummary';
 import './sit-reps.css';
@@ -7,33 +7,38 @@ const dateFormat = new Intl.DateTimeFormat('en-PH', {
   dateStyle: 'long', timeStyle: 'short', timeZone: 'Asia/Manila',
 });
 
-function SitRepHeader({ title, subtitle, onBack, onCreate }) {
+function SitRepHeader({ title, subtitle, onBack, onCreate, connection }) {
   return <header className="reporter-history-header sitrep-header">
     <div className="sitrep-heading">
       {onBack && <button type="button" className="reporter-text-button officer-review-back" aria-label="Back to Situation Reports" onClick={onBack}>
         <span className="reporter-back-icon" aria-hidden="true" />
       </button>}
-      <div><h1>{title}</h1><p>{subtitle}</p></div>
+      <div className="sitrep-title">
+        <div className="workspace-title-row"><h1>{title}</h1>{connection}</div>
+        <p>{subtitle}</p>
+      </div>
     </div>
     {onCreate && <button type="button" className="reporter-primary" onClick={onCreate}><Icon name="submit" /> Create New SitRep</button>}
   </header>;
 }
 
-export function SitRepList({ sitReps, barangay, onCreate, message }) {
+export function SitRepList({ sitReps, barangay, onCreate, message, connection }) {
   return <>
-    <SitRepHeader title="Situation Reports" subtitle={`SitReps endorsed to MDRRMO · Brgy. ${barangay}`} onCreate={onCreate} />
+    <SitRepHeader title="Situation Reports" subtitle={`Queued and endorsed SitReps · Brgy. ${barangay}`}
+      onCreate={onCreate} connection={connection} />
     <div className="reporter-home-body">
       {message && <p className="sitrep-message" role="status">{message}</p>}
       {sitReps.length ? <div className="sitrep-list">
         {sitReps.map((report) => <article className="reporter-card sitrep-card" key={report.id}>
           <div className="reporter-card-heading">
-            <h2>SitRep #{report.reference}</h2><span className="reporter-status" data-tone="sent">Endorsed</span>
+            <h2>SitRep #{report.reference}</h2>
+            <span className="reporter-status" data-tone={report.queued ? 'waiting' : 'sent'}>{report.queued ? 'Pending sync' : 'Endorsed'}</span>
           </div>
           <p className="sitrep-meta"><Icon name="calendar" /> {dateFormat.format(report.createdAt)}</p>
           <dl className="sitrep-metrics">
             <div><dt>Reports</dt><dd>{report.reportCount}</dd></div>
             <div><dt>Families</dt><dd>{report.families}</dd></div>
-            <div><dt>Status</dt><dd>Sent</dd></div>
+            <div><dt>Status</dt><dd>{report.queued ? 'Saved offline' : 'Endorsed in demo'}</dd></div>
           </dl>
           <p className="sitrep-meta"><Icon name="inbox" /> Worst level <strong>{report.worstLevel}</strong></p>
           {report.evacuationNeeded && <p className="sitrep-meta sitrep-flag"><Icon name="alert" /> Evacuation needed</p>}
@@ -41,18 +46,19 @@ export function SitRepList({ sitReps, barangay, onCreate, message }) {
           <div className="sitrep-narrative"><small>Officer’s Narrative</small><div>{report.narrative}</div></div>
           <p className="sitrep-meta sitrep-byline"><Icon name="pin" /> Brgy. {report.barangay} · {report.author}</p>
         </article>)}
-      </div> : <p>No endorsed situation reports yet.</p>}
+      </div> : <p>No situation reports yet.</p>}
     </div>
   </>;
 }
 
-export function NewSitRep({ reports, account, onBack, onEndorse }) {
+export function NewSitRep({ reports, account, onBack, onEndorse, connection, online }) {
   const [selectedIds, setSelectedIds] = useState(() => reports.slice(0, 1).map(({ id }) => id));
   const [familyOverride, setFamilyOverride] = useState('');
   const [evacuationStatus, setEvacuationStatus] = useState('');
   const [narrative, setNarrative] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const submissionId = useRef(null);
   const selected = reports.filter(({ id }) => selectedIds.includes(id));
   const summary = summarizeReports(selected);
   const families = familyOverride === '' ? summary.families : Number(familyOverride);
@@ -61,6 +67,7 @@ export function NewSitRep({ reports, account, onBack, onEndorse }) {
   async function submit(event) {
     event.preventDefault();
     if (saving) return;
+    if (saving) return;
     if (!selected.length || narrativeLength < 20 || !Number.isSafeInteger(families) || families < 0) {
       setError('Select at least one report, enter a valid family total, and write a narrative of at least 20 characters.');
       return;
@@ -68,7 +75,8 @@ export function NewSitRep({ reports, account, onBack, onEndorse }) {
     setError('');
     setSaving(true);
     try {
-      await onEndorse(selected.map(({ id }) => id), {
+      submissionId.current ??= crypto.randomUUID();
+      await onEndorse(submissionId.current, selected.map(({ id }) => id), {
         ...summary, families, evacuationStatus: evacuationStatus.trim(), narrative: narrative.trim(),
       });
     } catch (failure) {
@@ -78,7 +86,7 @@ export function NewSitRep({ reports, account, onBack, onEndorse }) {
   }
 
   return <>
-    <SitRepHeader title="New Situation Report" subtitle={`Brgy. ${account.barangay}`} onBack={onBack} />
+    <SitRepHeader title="New Situation Report" subtitle={`Brgy. ${account.barangay}`} onBack={onBack} connection={connection} />
     <form className="reporter-home-body sitrep-form" onSubmit={submit}>
       <section className="reporter-card sitrep-picker">
         <h2><Icon name="reports" /> Step 1 — Select Reports to Include</h2>
@@ -139,9 +147,9 @@ export function NewSitRep({ reports, account, onBack, onEndorse }) {
         </div>
         {error && <p className="error" role="alert">{error}</p>}
         <button type="submit" className="reporter-primary sitrep-endorse" disabled={!selected.length || saving}>
-          <Icon name="send" /> {saving ? 'Saving…' : 'Endorse to MDRRMO'}
+          <Icon name="send" /> {saving ? 'Saving…' : online ? 'Endorse to MDRRMO' : 'Queue endorsement'}
         </button>
-        <small>Demo only. Endorsements are saved in this browser.</small>
+        <small>{online ? 'Demo only. Endorsements are saved in this browser.' : 'Saved on this device and endorsed in the demo when you reconnect.'}</small>
       </section>
     </form>
   </>;

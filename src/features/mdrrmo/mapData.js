@@ -23,7 +23,11 @@ export function reportsInWindow(reports, hours, now) {
     Number.isFinite(submittedAt) && submittedAt <= now && submittedAt >= now - hours * 3600000) : reports;
 }
 
+export function endorsedReportIds(sitReps) {
+  return new Set(sitReps.filter(({ queued }) => !queued).flatMap(({ reportIds }) => reportIds ?? []));
+}
+
 export function endorsedReports({ reports, sitReps }) {
-  const includedIds = new Set(sitReps.flatMap(({ reportIds }) => reportIds ?? []));
+  const includedIds = endorsedReportIds(sitReps);
   return reports.filter(({ id }) => includedIds.has(id));
 }

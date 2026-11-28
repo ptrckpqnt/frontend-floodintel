@@ -135,29 +135,7 @@
   font-weight: 600;
 }
 .municipal-header-actions { display: flex; flex: none; align-items: center; gap: 12px; margin-inline-start: auto; }
-.municipal-header-actions .municipal-connection { padding-inline-start: 12px; border-inline-start: 1px solid var(--reporter-border); }
-.municipal-connection {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: #7a430a;
-  font: 650 .68rem/1.25 ui-monospace, Consolas, monospace;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-}
-.municipal-connection[data-online="true"] { color: #166044; }
-.municipal-connection-dot { width: 8px; height: 8px; border-radius: 50%; background: #dd8b31; }
-.municipal-connection[data-online="true"] .municipal-connection-dot {
-  background: #53d69b;
-  box-shadow: 0 0 7px #32c988a6;
-}
-@media (prefers-reduced-motion: no-preference) {
-  .municipal-connection[data-online="true"] .municipal-connection-dot { animation: municipal-online-glow 2.2s ease-in-out infinite alternate; }
-  @keyframes municipal-online-glow {
-    from { box-shadow: 0 0 4px #32c9888c; }
-    to { box-shadow: 0 0 10px 2px #32c988b3; }
-  }
-}
+.municipal-header-actions .connection-indicator { padding-inline-start: 12px; border-inline-start: 1px solid var(--reporter-border); }
 .municipal-sidebar-toggle, .municipal-theme-toggle {
   display: grid;
   place-items: center;
@@ -270,6 +248,7 @@
 }
 .municipal-panel h2 { margin: 0; font-size: 1rem; }
 .municipal-panel-heading { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.municipal-snapshot-date { display: block; margin-top: 2px; color: inherit; font-size: .75rem; font-weight: 400; }
 .municipal-panel-icon {
   display: grid;
   place-items: center;
@@ -394,7 +373,7 @@
   .municipal-header { gap: 8px; min-height: 52px; padding: 4px 10px; }
   .municipal-header .reporter-brand-logo { border: 1px solid #d2e5ff; border-radius: 8px; background: white; }
   .municipal-header-actions { gap: 8px; }
-  .municipal-header-actions .municipal-connection { padding: 0; border: 0; }
+  .municipal-header-actions .connection-indicator { padding: 0; border: 0; }
   .municipal-header .municipal-account-trigger { padding: 0; }
   .municipal-header .municipal-theme-toggle { width: 32px; height: 32px; }
   .municipal-content-resizable {
@@ -525,8 +504,8 @@
   --subnav-arrow-active-hover: #233e59;
 }
 .municipal-sidebar-collapsed[data-theme="dark"] .municipal-workspace-subnav { background: var(--municipal-panel); }
-.municipal-workspace[data-theme="dark"] .municipal-connection { color: #ffca86; }
-.municipal-workspace[data-theme="dark"] .municipal-connection[data-online="true"] { color: #80e8b8; }
+.municipal-workspace[data-theme="dark"] .connection-indicator { color: #ffca86; }
+.municipal-workspace[data-theme="dark"] .connection-indicator[data-online="true"] { color: #80e8b8; }
 .municipal-workspace[data-theme="dark"] .municipal-load-error { color: #ffaaa3; }
 .municipal-workspace[data-theme="dark"] .officer-team-layout :is(.officer-team-lead, .officer-team-details) {
   border-color: var(--reporter-border);

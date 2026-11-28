@@ -10,6 +10,57 @@
 }
 * { box-sizing: border-box; }
 body { margin: 0; }
+.workspace-title-row { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.workspace-title-row > h1 { min-width: 0; overflow-wrap: anywhere; }
+.workspace-title-row > .connection-control { margin-inline-start: auto; }
+.connection-control { display: inline-flex; align-items: center; gap: 4px; flex: none; }
+.connection-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #7a430a;
+  font: 650 .68rem/1.25 ui-monospace, Consolas, monospace;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.connection-indicator[data-online="true"] { color: #166044; }
+.connection-control .connection-help-button {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #7a430a;
+  font: 600 .75rem/1 system-ui, sans-serif;
+}
+.connection-control .connection-help-button:is(:hover, :active) { background: #dd8b3126; }
+.connection-help-dialog {
+  width: min(400px, calc(100% - 32px));
+  padding: 20px;
+  border: 1px solid #dfe3e8;
+  border-radius: 12px;
+  background: white;
+  color: #101827;
+}
+.connection-help-dialog::backdrop { background: #10182780; }
+.connection-help-dialog h2 { margin: 0 0 8px; font-size: 1.05rem; }
+.connection-control .connection-help-dialog p { margin: 0 0 12px; color: #536479; font-size: .9rem; }
+.connection-control .connection-help-dialog button { padding: 6px 14px; background: #005cf5; font-size: .85rem; }
+.connection-indicator-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: #dd8b31; }
+.connection-indicator[data-online="true"] .connection-indicator-dot {
+  background: #53d69b;
+  box-shadow: 0 0 7px #32c988a6;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .connection-indicator[data-online="true"] .connection-indicator-dot { animation: connection-glow 2.2s ease-in-out infinite alternate; }
+  @keyframes connection-glow {
+    from { box-shadow: 0 0 4px #32c9888c; }
+    to { box-shadow: 0 0 10px 2px #32c988b3; }
+  }
+}
 .section-label { margin: 0; color: #346663; font-weight: 650; }
 h1 { font-size: clamp(2rem, 5vw, 2.7rem); line-height: 1.15; margin: 6px 0 10px; }
 .intro { margin: 0 0 24px; color: #365651; }

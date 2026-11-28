@@ -59,6 +59,20 @@ The demo starts with five sample reports each for Mateo Reyes, Paolo Navarro, an
 
 The scenarios and measurements are fictional. Locations use approximate pins around real landmarks in [San Vicente, Apalit](https://www.kapekulitan.region3.dilg.gov.ph/sikap-barangay-hub/lgus/apalit/ap-san-vicente/ap-geographic-san-vicente). Each sample report has its own generated flood illustration, bundled with the demo.
 
-The offline queue, connection indicator, PWA installation, hosting, and Laravel integration are later milestones. See [FloodIntel-Frontend-Plan.md](FloodIntel-Frontend-Plan.md).
+## Try offline field reporting
 
-For Codex in VS Code: “Read the plan and README. Review this first milestone, then help me implement and test the offline queue and connection indicator for the Field Reporter workflow.”
+1. Run `npm run build` and `npm run preview`, then open the preview URL while online. The offline app cache is enabled in production builds on HTTPS and localhost.
+2. Sign in as a Field Reporter. After the first online visit, go offline and reload the page. Create a report with a photo and select **Save offline**. Enter the general area even if your device cannot capture GPS offline.
+3. Open **My Reports** to see the report marked **Pending sync**. Reconnect with the reporter workspace open to move it to the demo inbox in the same browser.
+
+## Try offline BDRRMO endorsements
+
+1. Open the production preview online and sign in as a BDRRM Officer. Use `noel.pangilinan@example.test` to try Tabuyuc’s sample report awaiting review. Go offline and reload to review reports saved in this browser.
+2. Accept a report, create a SitRep, and select **Queue endorsement**. The SitRep shows **Pending sync**, and its reports are reserved for that SitRep.
+3. Reconnect with the BDRRMO workspace open. The SitRep becomes **Endorsed**, and the linked reports become visible in the MDRRMO demo in this browser.
+
+## Try offline MDRRMO viewing
+
+Open the production preview and sign in as MDRRMO while online. Go offline to browse the last saved set of endorsed reports and Priority results. The live map and account changes require a connection. Reconnect to refresh the report list from this browser’s demo data.
+
+First-time sign-in and password reset require a connection. Reports and photos remain in browser storage. Shared delivery across devices requires the Laravel backend.
