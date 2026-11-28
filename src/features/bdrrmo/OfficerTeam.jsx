@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Icon } from '../../components/WorkspaceSidebar';
 import AccountAvatar from '../../components/AccountAvatar';
+import PasswordInput from '../../components/PasswordInput';
 import {
   createBarangayOfficer, createFieldReporter, listBarangayOfficers, listFieldReporters,
   removeBarangayOfficer, removeFieldReporter,
@@ -43,8 +44,11 @@ function TeamAccountForm({ team, onCancel, onCreated }) {
       <label>Email *<input name="email" type="email" autoComplete="off" placeholder="juan@example.com" required /></label>
       <label>Mobile Number *<input name="phone" type="tel" autoComplete="off" placeholder="09XXXXXXXXX" required /></label>
       <label>Position<input value={team.role} readOnly /></label>
-      <label>Temporary Password *<input name="password" type="password" autoComplete="new-password" minLength={6}
-        placeholder="At least 6 characters" required /></label>
+      <div>
+        <label htmlFor="officer-team-password">Temporary Password *</label>
+        <PasswordInput id="officer-team-password" name="password" autoComplete="new-password" minLength={6}
+          placeholder="At least 6 characters" required />
+      </div>
       {error && <p className="error" role="alert">{error}</p>}
       <div className="officer-team-form-actions">
         <button type="button" onClick={onCancel}>Cancel</button>
@@ -54,7 +58,7 @@ function TeamAccountForm({ team, onCancel, onCreated }) {
   </form>;
 }
 
-export default function OfficerTeam({ account }) {
+export default function OfficerTeam({ account, inlineAddButton = false }) {
   const municipal = account.role === 'MDRRMO Officer';
   const team = municipal ? barangayOfficers : fieldReporters;
   const [members, setMembers] = useState(team.list);
@@ -75,20 +79,23 @@ export default function OfficerTeam({ account }) {
     }
   }
 
+  const addButton = !showForm && <button type="button" className="reporter-primary officer-team-add" onClick={() => {
+    setMessage('');
+    setShowForm(true);
+  }}><Icon name="submit" /> Add {team.role}</button>;
+
   return <div className="officer-team-layout">
     <div className="officer-team-side">
       <section className="reporter-card officer-team-lead">
         <AccountAvatar account={account} className="officer-team-avatar" letters={2} />
         <div><h2>{account.fullName}</h2><p>{account.role} · {municipal ? account.barangay : `Brgy. ${account.barangay}`}</p></div>
+        {inlineAddButton && addButton}
       </section>
       {showForm ? <TeamAccountForm team={team} onCancel={() => setShowForm(false)} onCreated={() => {
         setMembers(team.list());
         setMessage(`${team.role} account created.`);
         setShowForm(false);
-      }} /> : <button type="button" className="reporter-primary" onClick={() => {
-        setMessage('');
-        setShowForm(true);
-      }}><Icon name="submit" /> Add {team.role}</button>}
+      }} /> : !inlineAddButton && addButton}
     </div>
     <section className="reporter-card officer-team-roster">
       <h2><Icon name="team" /> {team.title} <span>{members.length}</span></h2>

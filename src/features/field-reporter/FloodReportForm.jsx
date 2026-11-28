@@ -32,7 +32,6 @@ export default function FloodReportForm({ onSubmitted, onViewReport, onBack, pho
   const [sending, setSending] = useState(false);
   const [failure, setFailure] = useState('');
   const [confirmation, setConfirmation] = useState(null);
-  const [simulateFailure, setSimulateFailure] = useState(false);
   const pendingReport = useRef(null);
 
   useEffect(() => {
@@ -123,7 +122,7 @@ export default function FloodReportForm({ onSubmitted, onViewReport, onBack, pho
     const report = pendingReport.current;
     setSending(true);
     try {
-      const result = await submitFloodReport(report, { simulateFailure });
+      const result = await submitFloodReport(report);
       await onSubmitted(report, result);
       setConfirmation(result);
       window.scrollTo(0, 0);
@@ -229,10 +228,8 @@ export default function FloodReportForm({ onSubmitted, onViewReport, onBack, pho
             {field('rescueBoat', 'Accessible by Rescue Boat?', { options: [...yesNo].reverse() })}
             {field('vulnerableResidents', 'Vulnerable Residents?', { options: [['None', 'None'], ['Present', 'Present'], ['Unknown', 'Unknown']] })}
           </section>
-          <label className="toggle"><input type="checkbox" checked={simulateFailure}
-            onChange={(event) => setSimulateFailure(event.target.checked)} /> Simulate a server failure</label>
         </fieldset>
-        {failure && <p className="error summary" role="alert">{failure} Turn off the demo failure option and retry.</p>}
+        {failure && <p className="error summary" role="alert">{failure}</p>}
         <button className="reporter-primary submit" type="submit" disabled={sending || locating}>
           {sending ? 'Submitting…' : failure ? 'Retry submission' : 'Submit'}
         </button>

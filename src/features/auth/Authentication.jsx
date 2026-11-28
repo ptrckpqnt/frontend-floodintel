@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import PasswordInput from '../../components/PasswordInput';
 import {
   canResetPassword, requestPasswordReset, signIn, updatePassword,
 } from './authService';
@@ -9,13 +10,15 @@ const screens = {
   reset: ['Set New Password', 'Enter and confirm your new password.', 'Update Password', 'Updating…'],
 };
 
-function Input({ name, label, error, action, ...props }) {
+function Input({ name, label, error, action, type, ...props }) {
+  const Field = type === 'password' ? PasswordInput : 'input';
   return (
     <div>
-      <div className="auth-label"><label htmlFor={name}>{label}</label>{action}</div>
-      <input id={name} name={name} required aria-invalid={Boolean(error)}
+      <label htmlFor={name}>{label}</label>
+      <Field id={name} name={name} type={type} required aria-invalid={Boolean(error)}
         aria-describedby={error ? name + '-error' : undefined} {...props} />
       {error && <p className="error" id={name + '-error'}>{error}</p>}
+      {action && <div className="auth-field-action">{action}</div>}
     </div>
   );
 }
@@ -25,7 +28,6 @@ export default function Authentication({ token, entryScreen, onSignedIn, onClear
   const [errors, setErrors] = useState({});
   const [failure, setFailure] = useState('');
   const [busy, setBusy] = useState(false);
-  const [simulateFailure, setSimulateFailure] = useState(false);
   const [requested, setRequested] = useState(false);
   const [resetLink, setResetLink] = useState(null);
   const [focusHeading, setFocusHeading] = useState(false);
@@ -69,14 +71,14 @@ export default function Authentication({ token, entryScreen, onSignedIn, onClear
     setBusy(true);
     try {
       if (screen === 'signIn') {
-        onSignedIn(await signIn(identifier, password, simulateFailure));
+        onSignedIn(await signIn(identifier, password));
       } else if (screen === 'forgot') {
         setRequested(false);
         setResetLink(null);
-        setResetLink(await requestPasswordReset(email, simulateFailure));
+        setResetLink(await requestPasswordReset(email));
         setRequested(true);
       } else {
-        await updatePassword(token, password, simulateFailure);
+        await updatePassword(token, password);
         // Keep the current component mounted until the user returns to Sign In.
         setScreen('updated');
         setFocusHeading(true);
@@ -98,7 +100,7 @@ export default function Authentication({ token, entryScreen, onSignedIn, onClear
     <main className="auth-layout">
       <section className="auth-hero" aria-labelledby="auth-hero-title">
         <div className="auth-hero-content">
-          <p className="auth-eyebrow">Barangay disaster intelligence, connected.</p>
+          <p className="auth-eyebrow">Municipal disaster intelligence, connected.</p>
           <h2 id="auth-hero-title">Respond faster when every minute matters.</h2>
           <p className="auth-hero-description">One secure workspace for field reporting, validation, situation reports, and coordinated MDRRMO response.</p>
           <ul className="auth-feature-list">
@@ -124,7 +126,7 @@ export default function Authentication({ token, entryScreen, onSignedIn, onClear
               </svg>
             </span>
             <strong>FloodIntel</strong>
-            <p>Disaster Response Information System</p>
+            <p>An Integrated Information System for Disaster Resilience and Synchronized Reporting for MDRRMO-Apalit</p>
           </header>
           <section className="auth-card" aria-labelledby="auth-title">
             {screen !== 'signIn' && screen !== 'updated' && back}
@@ -176,14 +178,6 @@ export default function Authentication({ token, entryScreen, onSignedIn, onClear
             )}
             {screen === 'signIn' && <p className="auth-note">Need an account? Field Reporters should contact their BDRRMO. BDRRMO users should contact their MDRRMO.</p>}
           </section>
-          <aside className="auth-demo" aria-label="Demo controls">
-            {screens[screen] && !invalidLink && (
-              <label className="toggle">
-                <input type="checkbox" checked={simulateFailure} disabled={busy}
-                  onChange={(event) => setSimulateFailure(event.target.checked)} /> Simulate a server failure
-              </label>
-            )}
-          </aside>
         </div>
       </div>
     </main>
