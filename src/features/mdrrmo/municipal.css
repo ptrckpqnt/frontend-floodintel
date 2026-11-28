@@ -1,5 +1,6 @@
 .reporter-workspace.municipal-workspace {
   --municipal-map-background: #e7edee;
+  --municipal-heading-size: clamp(.92rem, 1.4vw, 1.15rem);
   display: grid;
   grid-template: auto auto minmax(0, 1fr) / minmax(0, 1fr);
   grid-template-areas: "header" "sidebar" "content";
@@ -130,7 +131,7 @@
 .municipal-title { min-width: 0; }
 .municipal-title h1 {
   margin: 0;
-  font-size: clamp(.92rem, 1.4vw, 1.15rem);
+  font-size: var(--municipal-heading-size);
   font-weight: 600;
 }
 .municipal-header-actions { display: flex; flex: none; align-items: center; gap: 12px; margin-inline-start: auto; }
@@ -172,8 +173,9 @@
 .municipal-workspace .municipal-theme-toggle svg { width: 19px; height: 19px; }
 .municipal-clock { display: flex; flex-wrap: wrap; align-items: baseline; gap: 3px 8px; padding-inline-start: 12px; border-inline-start: 1px solid var(--reporter-border); color: #163962; }
 .municipal-clock strong { font-size: clamp(.85rem, 1.4vw, 1.05rem); font-weight: 600; line-height: 1.15; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.municipal-clock small, .municipal-clock span { font-size: clamp(.65rem, 1.2vw, .78rem); }
-.municipal-clock span { color: #536479; }
+.municipal-clock-digits { font-family: ui-monospace, Consolas, monospace; }
+.municipal-clock small, .municipal-clock > span { font-size: clamp(.65rem, 1.2vw, .78rem); }
+.municipal-clock > span { color: #536479; }
 
 .municipal-content {
   grid-area: content;
@@ -184,6 +186,7 @@
 }
 .municipal-content-split { grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); }
 .municipal-map-column { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.municipal-map-column[hidden] { display: none; }
 .municipal-map-toolbar {
   display: flex;
   align-items: center;
@@ -198,13 +201,20 @@
 }
 .municipal-map-toolbar label { display: flex; align-items: center; gap: 8px; margin: 0; }
 .municipal-map-toolbar select {
+  appearance: none;
   min-width: 0;
-  padding: 4px 6px;
+  padding: 4px 30px 4px 6px;
   border: 1px solid var(--reporter-border);
   border-radius: 6px;
-  background: white;
+  background: white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='m4 6 4 4 4-4' fill='none' stroke='%238194ac' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") right 8px center / 14px no-repeat;
   color: #101827;
   font: inherit;
+}
+.municipal-map-toolbar select:where(:open) {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='m4 10 4-4 4 4' fill='none' stroke='%238194ac' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+@media (forced-colors: active) {
+  .municipal-map-toolbar select { appearance: auto; padding-inline-end: 6px; background-image: none; }
 }
 .municipal-load-error { margin: 0; padding: 6px 12px; color: #96251e; font-size: .8rem; }
 .municipal-map { flex: 1; position: relative; min-height: 0; overflow: hidden; background: var(--municipal-map-background); }
@@ -334,7 +344,7 @@
   }
   .reporter-workspace.municipal-sidebar-collapsed { grid-template-columns: 66px minmax(0, 1fr); }
   .municipal-workspace .reporter-sidebar { display: flex; align-items: stretch; gap: 0; padding: 0 10px; border-bottom: 0; }
-  .municipal-workspace .reporter-brand { margin: 0 -10px 12px; block-size: var(--municipal-header-height); min-height: 0; padding: 0 12px; font-size: 1rem; }
+  .municipal-workspace .reporter-brand { margin: 0 -10px 12px; block-size: var(--municipal-header-height); min-height: 0; padding: 0 12px; font-size: var(--municipal-heading-size); }
   .municipal-workspace .reporter-nav { flex: none; }
   .municipal-workspace .reporter-nav-section { position: relative; display: grid; }
   .municipal-workspace .municipal-workspace-subnav { display: grid; grid-area: auto; padding: 4px 0 3px 20px; }
@@ -363,10 +373,17 @@
   .municipal-account-actions { inset: auto 0 calc(100% + 5px) 0; }
   .municipal-sidebar-collapsed .municipal-account-identity { display: none; }
   .municipal-sidebar-collapsed .municipal-account-trigger { justify-content: center; }
-  .municipal-sidebar-collapsed .reporter-brand .municipal-sidebar-toggle { margin-inline-start: 0; }
   .municipal-sidebar-collapsed .reporter-brand, .municipal-sidebar-collapsed .reporter-nav button { justify-content: center; padding-inline: 0; }
   .municipal-content-split { grid-template: minmax(0, 1fr) / minmax(0, 1fr) minmax(280px, 33.333vw); }
-  .municipal-panel { border-top: 0; border-left: 1px solid var(--reporter-border); }
+  .municipal-panel { border-top: 0; }
+  .municipal-content-split > .municipal-panel { border-left: 1px solid var(--reporter-border); }
+  .municipal-panel .officer-team-lead > .officer-team-add {
+    flex: none;
+    width: auto;
+    margin-inline-start: auto;
+  }
+  .municipal-panel .officer-team-form fieldset { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .municipal-panel .officer-team-form fieldset > :is(.error, .officer-team-form-actions) { grid-column: 1 / -1; }
 }
 
 @media (width < 900px) {
@@ -468,10 +485,10 @@
   .reporter-response-values > div, .reporter-detail-photo,
   .reporter-profile-fields > div, .reporter-edit-dialog input, .reporter-profile .secondary, .reporter-logout-cancel,
   .officer-team-form input:not([type="checkbox"]), .officer-team-form-actions button[type="button"]
-) { background: var(--municipal-control); color: inherit; }
+) { background-color: var(--municipal-control); color: inherit; }
 
 .municipal-workspace[data-theme="dark"] :is(
-  .municipal-clock span, .municipal-results, .municipal-panel-body > p,
+  .municipal-clock > span, .municipal-results, .municipal-panel-body > p,
   .municipal-priority p, .municipal-location-card small, .reporter-sidebar-account small,
   .reporter-detail-card dt, .reporter-detail-date, .municipal-account-identity small,
   .officer-team-member summary small, .officer-team-details dt, .officer-team-chevron, .officer-team-form label,

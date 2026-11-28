@@ -37,28 +37,34 @@ export function Icon({ name }) {
 
 export function WorkspaceBrand({ collapsed = false, onToggle, sidebarId }) {
   return <div className="reporter-brand">
-        {!collapsed && <><span className="reporter-brand-logo" aria-hidden="true">
-          <svg viewBox="0 0 32 32">
+        <span className="reporter-brand-logo" aria-hidden={!collapsed} role={collapsed ? 'img' : undefined}
+          aria-label={collapsed ? 'FloodIntel' : undefined}>
+          <svg viewBox="0 0 32 32" aria-hidden="true">
             <path fill="#073263" d="M4 15C4 9 8 4 14 4h15c-1 4-3 6-7 6h-8c-4 0-7 2-10 5Z" />
             <path fill="#008de9" d="M4 24c0-7 5-12 11-12h11c-1 4-3 6-7 6h-6c-3 0-6 2-9 6Z" />
             <path fill="#0056ae" d="M4 26c0-4 3-7 8-8v5c0 4-3 7-8 7Z" />
           </svg>
         </span>
-        <strong className="reporter-brand-name">FloodIntel</strong></>}
-        {onToggle && <button type="button" className="municipal-sidebar-toggle" aria-expanded={!collapsed} aria-controls={sidebarId}
-          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} onClick={onToggle}>
-          <Icon name={collapsed ? 'sidebarExpand' : 'sidebarCollapse'} />
+        {!collapsed && <strong className="reporter-brand-name">FloodIntel</strong>}
+        {onToggle && !collapsed && <button type="button" className="municipal-sidebar-toggle" aria-expanded="true" aria-controls={sidebarId}
+          aria-label="Collapse sidebar" onClick={onToggle}>
+          <Icon name="sidebarCollapse" />
         </button>}
       </div>;
 }
 
-export default function WorkspaceSidebar({ account, avatarLetters, navigation, screen, navigate, mobileSubmitLabel, accountMenu, subnavigation, id, collapsed = false, onToggle, showBrand = true }) {
+export default function WorkspaceSidebar({ account, avatarLetters, navigation, screen, navigate, mobileSubmitLabel, accountMenu, subnavigation, id, collapsed = false, onToggle, showBrand = true, showNavigationTitles = false }) {
   return <aside className="reporter-sidebar" id={id}>
       {showBrand && <WorkspaceBrand collapsed={collapsed} onToggle={onToggle} sidebarId={id} />}
       <nav className="reporter-nav" aria-label={account.role}>
+        {collapsed && onToggle && <button type="button" aria-label="Expand sidebar" title="Expand sidebar"
+          aria-expanded="false" aria-controls={id} onClick={onToggle}>
+          <span className="reporter-nav-icon"><Icon name="sidebarExpand" /></span>
+        </button>}
         {navigation.map(([id, label]) => {
           const submenu = subnavigation?.[id];
           const item = <button key={id} type="button" className={`reporter-nav-${id}`}
+            title={showNavigationTitles ? label : undefined}
             aria-expanded={submenu?.expanded} aria-controls={submenu?.controls}
             aria-current={screen === id ? 'page' : undefined} onClick={() => navigate(id)}>
             <span className="reporter-nav-icon"><Icon name={id} />{id === 'submit' && mobileSubmitLabel && <Icon name="camera" />}</span>

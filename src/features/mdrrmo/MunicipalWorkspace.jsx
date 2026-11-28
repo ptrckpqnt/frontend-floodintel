@@ -9,8 +9,8 @@ import FloodDepthMap from './FloodDepthMap';
 import { canMap, depthBand, hasCoordinates, reportsInWindow } from './mapData';
 import './municipal.css';
 
-const navigation = [['map', 'Map'], ['reports', 'Reports'], ['priority', 'Priority']];
-const panelTitles = { reports: 'Location Reports', priority: 'Priority', team: 'BDRRM Officers', profile: 'Profile' };
+const panelTitles = { reports: 'Situation Reports', priority: 'Priority', team: 'BDRRM Officers', profile: 'Profile' };
+const navigation = [['map', 'Map'], ['reports', 'SITREPs'], ['priority', panelTitles.priority]];
 const priorityCategories = [
   { id: 'evacuation', label: 'Evacuation needed', empty: 'No evacuation requests in this time range.',
     select: (reports) => reports.filter(({ evacuationNeeded }) => evacuationNeeded) },
@@ -173,7 +173,9 @@ export default function MunicipalWorkspace({ account, reports, onSignOut, onAcco
   const priorityTitle = priorityCategories.find(({ id }) => id === priority)?.label ?? panelTitles.priority;
   const listTitle = panel === 'reports' ? reportTitle : panel === 'priority' ? priorityTitle : panelTitles[panel];
   const panelTitle = selected ? 'Report Details' : listTitle;
-  const resizableReport = mobile && (panel === 'reports' || panel === 'priority');
+  const splitView = panel === 'reports' || panel === 'priority';
+  const showMap = panel === 'map' || splitView;
+  const resizableReport = mobile && splitView;
   const query = search.trim().toLowerCase();
   const barangayReports = visible.filter((report) => !barangay || report.reporter.barangay === barangay);
   const matches = barangayReports.filter((report) =>
@@ -262,6 +264,7 @@ export default function MunicipalWorkspace({ account, reports, onSignOut, onAcco
 
   const accountMenu = <AccountMenu account={account} onNavigate={navigate} onSignOut={onSignOut} />;
   const sidebar = <WorkspaceSidebar id="municipal-sidebar" account={account} avatarLetters={2} navigation={navigation} screen={panel}
+      showNavigationTitles={!mobile}
       navigate={(nextPanel) => {
         if (sidebarCollapsed && (nextPanel === 'reports' || nextPanel === 'priority')) {
           setCollapsedSubnav((current) => current === nextPanel ? null : nextPanel);
@@ -293,7 +296,7 @@ export default function MunicipalWorkspace({ account, reports, onSignOut, onAcco
         <WorkspaceBrand />
       </> : <div className="municipal-title"><h1>MDRRMC Operations</h1></div>}
       {!mobile && <time className="municipal-clock" dateTime={new Date(now).toISOString()}>
-        <strong>{clockTime.format(now)} <small>PHT</small></strong>
+        <strong><span className="municipal-clock-digits">{clockTime.format(now)}</span> <small>PHT</small></strong>
         <span>{clockDate.format(now)}</span>
       </time>}
       <div className="municipal-header-actions">
@@ -323,9 +326,9 @@ export default function MunicipalWorkspace({ account, reports, onSignOut, onAcco
       </header>
       {sidebar}
     </dialog>}
-    <main ref={contentArea} className={`municipal-content${panel === 'map' ? '' : ' municipal-content-split'}${resizableReport ? ' municipal-content-resizable' : ''}`}
+    <main ref={contentArea} className={`municipal-content${splitView ? ' municipal-content-split' : ''}${resizableReport ? ' municipal-content-resizable' : ''}`}
       style={resizableReport ? { '--municipal-report-height': `${reportHeight}%` } : undefined}>
-      <div className="municipal-map-column">
+      <div className="municipal-map-column" hidden={!showMap}>
         <div className="municipal-map-toolbar">
           <label>Report time range
             <select value={hours} onChange={(event) => setHours(Number(event.target.value))}>
@@ -357,12 +360,12 @@ export default function MunicipalWorkspace({ account, reports, onSignOut, onAcco
             </button>}
             <h2>{panelTitle}</h2>
           </div>
-          <button type="button" className="municipal-panel-icon" aria-label="Close panel" onClick={() => navigate('map')}>
+          <button type="button" className="municipal-panel-icon" aria-label={showMap ? 'Close panel' : 'Return to map'} onClick={() => navigate('map')}>
             <Icon name="close" />
           </button>
         </header>
         {panel === 'priority' && !selected && <PriorityReports reports={visible} category={priority} onSelect={openReport} />}
-        {panel === 'team' && <div className="municipal-panel-body"><OfficerTeam account={account} /></div>}
+        {panel === 'team' && <div className="municipal-panel-body"><OfficerTeam account={account} inlineAddButton={!mobile} /></div>}
         {panel === 'profile' && <WorkspaceProfile account={account}
           onAccountUpdated={onAccountUpdated} avatarLetters={2} assignmentLabel="Municipality" />}
         {selected && <div className="municipal-panel-body municipal-report-detail">

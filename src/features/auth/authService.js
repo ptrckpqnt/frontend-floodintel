@@ -80,14 +80,13 @@ async function digest(password) {
   return Array.from(new Uint8Array(hash), (byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
-async function checkConnection(simulateFailure) {
+async function checkConnection() {
   await new Promise((resolve) => setTimeout(resolve, 350));
   if (!navigator.onLine) throw new Error('You’re offline. Reconnect and try again.');
-  if (simulateFailure) throw new Error('The demo service is unavailable. Turn off the failure simulation and retry.');
 }
 
-export async function signIn(identifier, password, simulateFailure) {
-  await checkConnection(simulateFailure);
+export async function signIn(identifier, password) {
+  await checkConnection();
   const login = normalizePhone(identifier).toLowerCase();
   const hash = await digest(password);
   const account = activeAccounts().map(readAccount).find(({ email, phone }) => email === login || phone === login);
@@ -203,8 +202,8 @@ export async function updateAccountProfile(id, { fullName, email, phone, current
   return accountProfile({ ...updated, avatarColor: current.avatarColor, barangay: current.barangay });
 }
 
-export async function requestPasswordReset(email, simulateFailure) {
-  await checkConnection(simulateFailure);
+export async function requestPasswordReset(email) {
+  await checkConnection();
   const address = email.trim().toLowerCase();
   const account = activeAccounts().map(readAccount).find((candidate) => candidate.email === address);
   if (!account) return null;
@@ -231,8 +230,8 @@ export function canResetPassword(token) {
   return Boolean(findResetAccount(token));
 }
 
-export async function updatePassword(token, password, simulateFailure) {
-  await checkConnection(simulateFailure);
+export async function updatePassword(token, password) {
+  await checkConnection();
   if (password.length < 6) throw new Error('Enter at least 6 characters.');
   const hash = await digest(password);
   const account = findResetAccount(token);

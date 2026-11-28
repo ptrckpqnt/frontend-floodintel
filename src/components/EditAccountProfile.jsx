@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import PasswordInput from './PasswordInput';
 import { updateAccountProfile } from '../features/auth/authService';
 
 export default function EditAccountProfile({ account, onSaved, onCancel }) {
@@ -44,15 +45,15 @@ export default function EditAccountProfile({ account, onSaved, onCancel }) {
       <p>Leave these fields blank to keep your current password.</p>
       <div>
         <label htmlFor="reporter-edit-current">Current Password</label>
-        <input id="reporter-edit-current" name="currentPassword" type="password" autoComplete="current-password" />
+        <PasswordInput id="reporter-edit-current" name="currentPassword" autoComplete="current-password" />
       </div>
       <div>
         <label htmlFor="reporter-edit-new">New Password</label>
-        <input id="reporter-edit-new" name="newPassword" type="password" autoComplete="new-password" minLength={6} />
+        <PasswordInput id="reporter-edit-new" name="newPassword" autoComplete="new-password" minLength={6} />
       </div>
       <div>
         <label htmlFor="reporter-edit-confirm">Confirm New Password</label>
-        <input id="reporter-edit-confirm" name="confirmPassword" type="password" autoComplete="new-password" />
+        <PasswordInput id="reporter-edit-confirm" name="confirmPassword" autoComplete="new-password" />
       </div>
     </fieldset>
     {error && <p className="error summary" role="alert" tabIndex="-1" ref={errorMessage}>{error}</p>}

@@ -32,6 +32,27 @@ input:not([type="checkbox"]) {
   color: inherit;
 }
 input[aria-invalid="true"] { border-color: #a32b25; }
+.password-input { display: grid; grid-template-columns: minmax(0, 1fr); }
+.password-input > input[name]:not([type="checkbox"]) {
+  grid-area: 1 / 1;
+  padding-inline-end: 44px;
+}
+.password-input > input::-ms-reveal { display: none; }
+.password-input > .password-visibility {
+  grid-area: 1 / 1;
+  place-self: center end;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 30px;
+  margin-inline-end: 4px;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  z-index: 1;
+}
+.password-visibility svg { width: 18px; height: 18px; }
+.password-input > input:placeholder-shown + .password-visibility { visibility: hidden; }
 button {
   padding: 10px 16px;
   border: 1px solid transparent;
