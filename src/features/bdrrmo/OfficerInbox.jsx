@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Icon } from '../../components/WorkspaceSidebar';
 import { ReportHistoryCard } from '../flood-reports/ReportCards';
-import { reportStatuses } from '../flood-reports/reportData';
+import { pendingSync, reportStatuses } from '../flood-reports/reportData';
 
-export default function OfficerInbox({ reports, barangay, status, onStatusChange, selected, onSelect }) {
+export default function OfficerInbox({ reports, barangay, status, onStatusChange, selected, onSelect, connection }) {
   const [search, setSearch] = useState('');
   const query = search.trim().toLowerCase();
   const visibleReports = reports.filter((report) =>
@@ -14,7 +14,10 @@ export default function OfficerInbox({ reports, barangay, status, onStatusChange
   return <section className="officer-inbox reporter-history" aria-labelledby="officer-inbox-title">
     <header className="reporter-history-header reporter-history-header-list officer-inbox-header">
       <div>
-        <h1 id="officer-inbox-title">Barangay Inbox</h1>
+        <div className="workspace-title-row">
+          <h1 id="officer-inbox-title">Barangay Inbox</h1>
+          {connection}
+        </div>
         <p>Flood reports from Brgy. {barangay}</p>
       </div>
       <div className="reporter-history-controls" role="group" aria-label="Filter reports">
@@ -27,7 +30,7 @@ export default function OfficerInbox({ reports, barangay, status, onStatusChange
           <Icon name="filter" />
           <select aria-label="Report status" value={status} onChange={(event) => onStatusChange(event.target.value)}>
             <option value="">All Reports</option>
-            {Object.keys(reportStatuses).map((value) => <option key={value}>{value}</option>)}
+            {Object.keys(reportStatuses).filter((value) => value !== pendingSync).map((value) => <option key={value}>{value}</option>)}
           </select>
         </label>
       </div>

@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import ReportDetails from '../flood-reports/ReportDetails';
 import { ReportStatus } from '../flood-reports/ReportCards';
 
-export default function OfficerReportReview({ report, onBack, onDecision }) {
+export default function OfficerReportReview({ report, onBack, onDecision, connection }) {
   const [note, setNote] = useState('');
   const [error, setError] = useState(false);
   const noteField = useRef(null);
@@ -38,7 +38,10 @@ export default function OfficerReportReview({ report, onBack, onDecision }) {
       <button type="button" className="reporter-text-button officer-review-back" onClick={onBack} aria-label="Back to Barangay Inbox">
         <span className="reporter-back-icon" aria-hidden="true" />
       </button>
-      <div><h1 ref={heading} tabIndex={-1}>Review Report</h1><p>Report #{report.id}</p></div>
+      <div>
+        <div className="workspace-title-row"><h1 ref={heading} tabIndex={-1}>Review Report</h1>{connection}</div>
+        <p>Report #{report.id}</p>
+      </div>
       <ReportStatus status={report.status} />
     </header>
     <ReportDetails report={report} allowCall />

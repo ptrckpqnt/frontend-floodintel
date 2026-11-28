@@ -58,7 +58,7 @@ function TeamAccountForm({ team, onCancel, onCreated }) {
   </form>;
 }
 
-export default function OfficerTeam({ account, inlineAddButton = false }) {
+export default function OfficerTeam({ account, inlineAddButton = false, readOnly = false }) {
   const municipal = account.role === 'MDRRMO Officer';
   const team = municipal ? barangayOfficers : fieldReporters;
   const [members, setMembers] = useState(team.list);
@@ -79,7 +79,7 @@ export default function OfficerTeam({ account, inlineAddButton = false }) {
     }
   }
 
-  const addButton = !showForm && <button type="button" className="reporter-primary officer-team-add" onClick={() => {
+  const addButton = !readOnly && !showForm && <button type="button" className="reporter-primary officer-team-add" onClick={() => {
     setMessage('');
     setShowForm(true);
   }}><Icon name="submit" /> Add {team.role}</button>;
@@ -91,11 +91,11 @@ export default function OfficerTeam({ account, inlineAddButton = false }) {
         <div><h2>{account.fullName}</h2><p>{account.role} · {municipal ? account.barangay : `Brgy. ${account.barangay}`}</p></div>
         {inlineAddButton && addButton}
       </section>
-      {showForm ? <TeamAccountForm team={team} onCancel={() => setShowForm(false)} onCreated={() => {
+      {!readOnly && (showForm ? <TeamAccountForm team={team} onCancel={() => setShowForm(false)} onCreated={() => {
         setMembers(team.list());
         setMessage(`${team.role} account created.`);
         setShowForm(false);
-      }} /> : !inlineAddButton && addButton}
+      }} /> : !inlineAddButton && addButton)}
     </div>
     <section className="reporter-card officer-team-roster">
       <h2><Icon name="team" /> {team.title} <span>{members.length}</span></h2>
@@ -121,7 +121,7 @@ export default function OfficerTeam({ account, inlineAddButton = false }) {
               <div><dt>Position</dt><dd>{member.role}</dd></div>
               <div><dt>Barangay</dt><dd>{member.barangay}</dd></div>
             </dl>
-            <button type="button" className="officer-team-remove" onClick={() => remove(member)}>Remove from Team</button>
+            {!readOnly && <button type="button" className="officer-team-remove" onClick={() => remove(member)}>Remove from Team</button>}
           </div>
         </details>)}
       </div>

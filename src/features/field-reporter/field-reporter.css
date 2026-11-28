@@ -7,6 +7,14 @@
 }
 .reporter-workspace svg { width: 24px; height: 24px; flex: none; }
 .reporter-main { max-width: 1180px; margin: 0 auto; padding: 0 0 105px; }
+.queue-sync-notice { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 12px 16px; }
+.queue-sync-notice .error { margin: 0; }
+.flood-report-heading, .reporter-history-heading > div, .sitrep-title { flex: 1; min-width: 0; }
+.reporter-profile-heading > .connection-control { margin-inline-start: auto; }
+@media (width < 900px) {
+  :is(.reporter-heading, .reporter-profile-heading) :is(.connection-indicator, .connection-control .connection-help-button) { color: #ffdcaa; }
+  :is(.reporter-heading, .reporter-profile-heading) .connection-indicator[data-online="true"] { color: #a5f4cc; }
+}
 .reporter-heading {
   position: sticky;
   top: 0;

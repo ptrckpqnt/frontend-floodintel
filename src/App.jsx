@@ -1,13 +1,17 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import Authentication from './features/auth/Authentication';
 import ReporterWorkspace from './features/field-reporter/ReporterWorkspace';
 import { getSignedInAccount, signOut } from './features/auth/authService';
 import FloodReportForm from './features/field-reporter/FloodReportForm';
+import { submitFloodReport } from './features/field-reporter/reportService';
 import OfficerWorkspace from './features/bdrrmo/OfficerWorkspace';
 import MunicipalWorkspace from './features/mdrrmo/MunicipalWorkspace';
 import { endorsedReports } from './features/mdrrmo/mapData';
 import useReportBoard from './features/flood-reports/useReportBoard';
-import { addReport } from './features/flood-reports/reportStore';
+import useQueueSync from './features/flood-reports/useQueueSync';
+import { addReport, submitQueuedReports } from './features/flood-reports/reportStore';
+import { pendingSync } from './features/flood-reports/reportData';
+import useOnline from './useOnline';
 
 function readResetToken() {
   return new URLSearchParams(window.location.hash.slice(1)).get('reset');
@@ -17,7 +21,16 @@ export default function App() {
   const [account, setAccount] = useState(getSignedInAccount);
   const [token, setToken] = useState(readResetToken);
   const [entryScreen, setEntryScreen] = useState('signIn');
-  const { board, loadError, updateBoard } = useReportBoard();
+  const { board, offlineSnapshot, loadError, updateBoard } = useReportBoard();
+  const online = useOnline();
+  const reporterId = account?.role === 'Field Reporter' && token === null ? account.id : null;
+  const reporterReports = reporterId ? board.reports.filter((report) => report.reporter.id === reporterId) : [];
+  const pendingCount = reporterReports.filter((report) => report.status === pendingSync).length;
+  const syncReports = useCallback(() => updateBoard((current) =>
+    navigator.onLine && getSignedInAccount()?.id === reporterId
+      ? submitQueuedReports(current, reporterId)
+      : current), [reporterId, updateBoard]);
+  const queueSync = useQueueSync({ online, count: pendingCount, sync: syncReports });
 
   useEffect(() => {
     const syncSession = () => setAccount(getSignedInAccount());
@@ -45,19 +58,29 @@ export default function App() {
     setAccount(null);
   }
 
+  async function saveReport(report) {
+    const confirmation = navigator.onLine && Number.isFinite(report.latitude)
+      ? await submitFloodReport(report)
+      : { id: report.clientId };
+    await updateBoard((current) => addReport(current, report, confirmation.id, account,
+      !navigator.onLine || !confirmation.simulated ? pendingSync : undefined));
+    return confirmation;
+  }
+
   if (account && token === null) {
     if (account.role === 'MDRRMO Officer') {
+      const savedIds = new Set(offlineSnapshot?.ids);
+      const reports = online ? endorsedReports(board) : board.reports.filter(({ id }) => savedIds.has(id));
       return <MunicipalWorkspace key={account.id} account={account} onSignOut={handleSignOut} onAccountUpdated={setAccount}
-        reports={endorsedReports(board)} loadError={loadError} />;
+        reports={reports} loadError={loadError} online={online} snapshotAt={offlineSnapshot?.savedAt} />;
     }
     return <>
       {loadError && <p className="error" role="alert">{loadError}</p>}
       {account.role === 'BDRRM Officer'
         ? <OfficerWorkspace key={account.id} account={account} onAccountUpdated={setAccount} onSignOut={handleSignOut}
-          board={board} updateBoard={updateBoard} />
+          board={board} updateBoard={updateBoard} online={online} />
         : <ReporterWorkspace key={account.id} reporter={account} onReporterUpdated={setAccount} onSignOut={handleSignOut}
-          reports={board.reports.filter((report) => report.reporter.id === account.id)}
-          onSubmitReport={(report, confirmation) => updateBoard((current) => addReport(current, report, confirmation.id, account))}
+          reports={reporterReports} online={online} pendingCount={pendingCount} queueSync={queueSync} onSubmitReport={saveReport}
           renderReportForm={(props) => <FloodReportForm {...props} />} />}
     </>;
   }

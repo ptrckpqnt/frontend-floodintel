@@ -58,7 +58,34 @@ Add one row per workflow as it is built. An ERD can clarify relationships if ava
 
 | Workflow | Frontend action | Minimum data needed | Outcomes to show | Open questions |
 | --- | --- | --- | --- | --- |
-| Flood report submission (proposed) | `submitFloodReport()` | Form values and enough confirmation data to identify the submitted report | Sending, success, validation error, network or server failure | Laravel endpoint, authentication, upload format, acknowledgment and duplicate handling |
+| Flood report submission (proposed) | `submitFloodReport()` | Form values, photo, and a confirmed report ID | Sending, success, validation error, network or server failure | Confirm the proposed contract with the Laravel team and choose the authentication mechanism |
+
+### Proposed Laravel report endpoint
+
+`POST /api/reports` accepts an authenticated Field Reporter's submission as `multipart/form-data`. Laravel derives the reporter and barangay from the authenticated account.
+
+| Fields | Expected values |
+| --- | --- |
+| `general_area`, `landmark` | Required general area and optional landmark |
+| `water_level_cm`, `water_flow` | Non-negative depth in centimeters and one of `Still`, `Slow`, or `Fast` |
+| `estimated_affected_families`, `description` | Optional non-negative whole number and a required description of at least 10 characters |
+| `evacuation_needed`, `accessible_by_rescue_boat`, `vulnerable_residents` | Boolean flags sent as `0` or `1`, and one of `None`, `Present`, or `Unknown` |
+| `photo`, `captured_at` | Required image upload and the original device-recorded photo timestamp in ISO 8601 |
+| `latitude`, `longitude` | Decimal coordinates submitted together. Both may be omitted for an offline report saved without a location fix. |
+
+Laravel generates the official report `id`. The frontend uses the existing local submission UUID as a separate `Idempotency-Key` request header and reuses it for retries of the same submission. Laravel should enforce uniqueness for the authenticated reporter and retry key, and return the existing report ID if the original request already succeeded.
+
+On first success, return HTTP `201` after saving the report and photo. A successful replay can return HTTP `200` with the same report ID.
+
+```json
+{
+  "id": 482,
+  "status": "Awaiting Review",
+  "received_at": "2026-11-28T09:15:00Z"
+}
+```
+
+The frontend keeps the report pending until it receives this acknowledgment. Validation errors should return HTTP `422` with field-level messages so the reporter can fix the submission. Network failures or retryable server errors leave the report queued with its photo and original timestamp.
 
 ## Work in VS Code with Codex
 

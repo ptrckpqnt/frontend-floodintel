@@ -1,11 +1,22 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { accessReportBoard, initialBoard } from './reportStore';
 
 export default function useReportBoard() {
-  const [board, setBoard] = useState(initialBoard);
+  const [state, setState] = useState({ board: initialBoard, offlineSnapshot: null });
   const [loadError, setLoadError] = useState('');
   const channel = useRef(null);
   const revision = useRef(0);
+  const acceptBoard = useCallback((next) => {
+    setState((current) => {
+      if (next.version < current.board.version) return current;
+      return {
+        board: next,
+        offlineSnapshot: navigator.onLine || current.offlineSnapshot === null
+          ? { ids: next.municipalReportIds ?? [], savedAt: next.municipalSnapshotAt }
+          : current.offlineSnapshot,
+      };
+    });
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -14,7 +25,7 @@ export default function useReportBoard() {
       try {
         const next = await accessReportBoard();
         if (mounted && request === revision.current) {
-          setBoard((current) => next.version >= current.version ? next : current);
+          acceptBoard(next);
           setLoadError('');
         }
       } catch {
@@ -26,21 +37,23 @@ export default function useReportBoard() {
       channel.current.onmessage = refresh;
     }
     window.addEventListener('focus', refresh);
+    window.addEventListener('online', refresh);
     refresh();
     return () => {
       mounted = false;
       channel.current?.close();
       channel.current = null;
       window.removeEventListener('focus', refresh);
+      window.removeEventListener('online', refresh);
     };
-  }, []);
+  }, [acceptBoard]);
 
-  async function updateBoard(update) {
+  const updateBoard = useCallback(async (update) => {
     const next = await accessReportBoard(update);
-    setBoard((current) => next.version >= current.version ? next : current);
+    acceptBoard(next);
     setLoadError('');
     channel.current?.postMessage('updated');
-  }
+  }, [acceptBoard]);
 
-  return { board, loadError, updateBoard };
+  return { ...state, loadError, updateBoard };
 }

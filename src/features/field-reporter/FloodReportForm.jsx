@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { submitFloodReport } from './reportService';
 
 const initialFields = {
   generalArea: '', landmark: '', waterLevel: '', waterFlow: '', families: '',
@@ -22,7 +21,7 @@ function ReportField({ name, label, required, value, error, onChange, options, m
 
 const yesNo = [['No', 'No'], ['Yes', 'Yes']];
 
-export default function FloodReportForm({ onSubmitted, onViewReport, onBack, photo, photoError, mobileCapture, onChoosePhoto, onClearPhoto }) {
+export default function FloodReportForm({ onSubmitted, onViewReport, onBack, photo, photoError, mobileCapture, onChoosePhoto, onClearPhoto, online, connection, isPendingReport }) {
   const [fields, setFields] = useState(initialFields);
   const [preview, setPreview] = useState('');
   const [location, setLocation] = useState(null);
@@ -64,11 +63,14 @@ export default function FloodReportForm({ onSubmitted, onViewReport, onBack, pho
         pendingReport.current = null;
         setLocating(false);
       },
-      () => {
-        setLocationError('Could not get your location. Check browser permissions and try again.');
+      ({ code }) => {
+        const message = code === 1
+          ? 'Location access was denied. Allow location access in your browser settings and try again.'
+          : 'Could not get a location fix. Check that location services are on and try again.';
+        setLocationError(message);
         setLocating(false);
       },
-      { enableHighAccuracy: true, timeout: 15000 },
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 },
     );
   }
 
@@ -81,7 +83,7 @@ export default function FloodReportForm({ onSubmitted, onViewReport, onBack, pho
     const nextErrors = {};
     if (!photo) nextErrors.photo = 'Add a photo of the flooding.';
     if (!fields.generalArea.trim()) nextErrors.generalArea = 'Enter the general area.';
-    if (!location) nextErrors.location = 'Capture GPS coordinates before submitting.';
+    if (!location && navigator.onLine) nextErrors.location = 'Capture GPS coordinates before submitting.';
     if (fields.waterLevel === '' || !Number.isFinite(depth) || depth < 0) {
       nextErrors.waterLevel = 'Enter a non-negative depth in centimeters.';
     }
@@ -122,9 +124,7 @@ export default function FloodReportForm({ onSubmitted, onViewReport, onBack, pho
     const report = pendingReport.current;
     setSending(true);
     try {
-      const result = await submitFloodReport(report);
-      await onSubmitted(report, result);
-      setConfirmation(result);
+      setConfirmation(await onSubmitted(report));
       window.scrollTo(0, 0);
     } catch (error) {
       setFailure(error.message);
@@ -152,22 +152,24 @@ export default function FloodReportForm({ onSubmitted, onViewReport, onBack, pho
 
   const needsFirstPhoto = mobileCapture && !photo;
   const photoMessage = photoError || (!photo && errors.photo);
-  const locationMessage = locationError || errors.location;
+  const locationMessage = locationError || (online && errors.location);
+  const canSaveWithoutLocation = !online && !location && locationError;
+  const reportIsPending = confirmation && isPendingReport(confirmation.id);
 
   return <section className="reporter-inner flood-report">
     <header className="flood-report-header">
       <button className="reporter-text-button reporter-back-home" type="button" aria-label="Back to Home" onClick={onBack}>
         <span className="reporter-back-icon" aria-hidden="true" />
       </button>
-      <div>
-        <h1>Submit Flood Report</h1>
+      <div className="flood-report-heading">
+        <div className="workspace-title-row"><h1>Submit Flood Report</h1>{connection}</div>
         <p>{needsFirstPhoto ? 'Take a photo to continue' : photo ? 'Photo attached — fill in the details' : 'Add a photo and describe the flooding'}</p>
       </div>
     </header>
     {confirmation ? (
       <section className="reporter-card confirmation" aria-live="polite">
-        <h2>Demo report submitted</h2>
-        <p>This confirmation is simulated.</p>
+        <h2>{reportIsPending ? 'Report saved on this device' : 'Report added to the demo inbox'}</h2>
+        <p>{reportIsPending ? 'The report is pending sync in this browser. Keep FloodIntel open when you reconnect.' : 'This demo inbox is available only in this browser.'}</p>
         <div className="flood-confirmation-actions">
           <button className="reporter-primary" type="button" onClick={() => onViewReport(confirmation.id)}>View report</button>
           <button className="secondary" type="button" onClick={startAnother}>Create another report</button>
@@ -204,14 +206,16 @@ export default function FloodReportForm({ onSubmitted, onViewReport, onBack, pho
             {field('generalArea', 'General Area', { required: true, placeholder: 'e.g., Northville 10, Block 5' })}
             {field('landmark', 'Landmark / Street', { placeholder: 'e.g., Near the basketball court' })}
             <div>
-              <p className="field-label">GPS coordinates *</p>
+              <p className="field-label">GPS coordinates{online ? ' *' : ' (optional offline)'}</p>
               <button className="secondary flood-capture-location" type="button" onClick={captureLocation} disabled={locating}
                 aria-invalid={Boolean(!location && locationMessage)}
                 aria-describedby={locationMessage ? 'report-location-error' : undefined}>
                 {locating ? 'Getting location…' : location ? 'Update location' : 'Capture location'}
               </button>
               {location && <p aria-live="polite">{location.latitude.toFixed(5)}, {location.longitude.toFixed(5)}</p>}
-              {locationMessage && <p className="error" id="report-location-error" role="alert">{locationMessage}</p>}
+              {locationMessage && <p className="error" id="report-location-error" role="alert">
+                {locationMessage}{canSaveWithoutLocation && ' You can still save offline using the General Area.'}
+              </p>}
             </div>
           </section>
           <section className="reporter-card flood-report-card" aria-labelledby="report-flood-details">
@@ -231,7 +235,7 @@ export default function FloodReportForm({ onSubmitted, onViewReport, onBack, pho
         </fieldset>
         {failure && <p className="error summary" role="alert">{failure}</p>}
         <button className="reporter-primary submit" type="submit" disabled={sending || locating}>
-          {sending ? 'Submitting…' : failure ? 'Retry submission' : 'Submit'}
+          {sending ? 'Saving…' : !online ? 'Save offline' : failure ? 'Retry submission' : 'Submit'}
         </button>
       </form>
     )}

@@ -1,5 +1,7 @@
 import { summarizeReports } from '../bdrrmo/sitRepSummary.js';
 import { sampleReports, sampleSitReps } from './apalitSamples.js';
+import { pendingEndorsement, pendingSync } from './reportData.js';
+import { endorsedReportIds } from '../mdrrmo/mapData.js';
 
 export const initialBoard = { reports: sampleReports, sitReps: sampleSitReps, version: 0, seedVersion: 3 };
 const previousSampleIds = new Set(['sample-aroma', 'sample-villena', 'sample-riverside']);
@@ -29,7 +31,8 @@ export function withSampleReports(board) {
     ...board,
     seedVersion: initialBoard.seedVersion,
     reports: [
-      ...reports.map((report) => report.status === 'In SitRep' && removedEndorsements.has(report.id) && !endorsed.has(report.id)
+      ...reports.map((report) => (report.status === 'In SitRep' || report.status === pendingEndorsement) &&
+        removedEndorsements.has(report.id) && !endorsed.has(report.id)
         ? { ...report, status: 'Accepted' }
         : report),
       ...sampleReports.filter(({ id }) => !existingReports.has(id)),
@@ -71,15 +74,31 @@ export async function accessReportBoard(update) {
       request.onsuccess = () => {
         try {
           board = withSampleReports(request.result);
-          if (update) board = { ...board, ...update(board), version: board.version + 1 };
-          if (update || (request.result && board !== request.result)) store.put(board, 'current');
+          if (update) {
+            const changes = update(board);
+            if (changes !== board) board = { ...board, ...changes, version: board.version + 1 };
+          }
+          if (navigator.onLine) {
+            const ids = [...endorsedReportIds(board.sitReps)];
+            const savedIds = board.municipalReportIds;
+            if (!board.municipalSnapshotAt || ids.length !== savedIds?.length || ids.some((id, index) => id !== savedIds[index])) {
+              board = { ...board, municipalReportIds: ids, municipalSnapshotAt: Date.now() };
+            }
+          }
+          if (board !== (request.result ?? initialBoard)) store.put(board, 'current');
         } catch (error) {
           updateError = error;
           tx.abort();
         }
       };
       tx.oncomplete = () => resolve(board);
-      tx.onabort = () => reject(updateError ?? new Error('Could not access saved reports. Check available browser storage and try again.'));
+      tx.onabort = () => {
+        if ((updateError ?? tx.error)?.name === 'QuotaExceededError') {
+          reject(new Error('Browser storage is full. Free device space and retry while this form is open.'));
+        } else {
+          reject(updateError ?? new Error('Could not save or load the report data. Check browser storage and try again.'));
+        }
+      };
     });
   } finally {
     db.close();
@@ -90,7 +109,7 @@ const dateFormat = new Intl.DateTimeFormat('en-PH', {
   month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
 });
 
-export function addReport(board, submission, id, account) {
+export function addReport(board, submission, id, account, status = 'Awaiting Review') {
   if (board.reports.some((report) => report.id === id)) return board;
   const submittedAt = Date.now();
   const { id: reporterId, fullName, phone, barangay } = account;
@@ -100,7 +119,34 @@ export function addReport(board, submission, id, account) {
     dateLabel: dateFormat.format(submittedAt),
     location: submission.generalArea,
     waterLevel: `${submission.waterLevelCm} cm`,
-    status: 'Awaiting Review',
+    status,
   };
   return { ...board, reports: [report, ...board.reports] };
+}
+
+export function submitQueuedReports(board, accountId) {
+  const isPending = (report) => report.reporter.id === accountId && report.status === pendingSync;
+  if (!board.reports.some(isPending)) return board;
+
+  return {
+    ...board,
+    reports: board.reports.map((report) => isPending(report)
+      ? { ...report, status: 'Awaiting Review' }
+      : report),
+  };
+}
+
+export function endorseQueuedSitReps(board, barangay) {
+  const queued = board.sitReps.filter((entry) => entry.queued && entry.barangay === barangay);
+  if (!queued.length) return board;
+
+  const ids = new Set(queued.map(({ id }) => id));
+  const reportIds = new Set(queued.flatMap((entry) => entry.reportIds));
+  return {
+    ...board,
+    sitReps: board.sitReps.map((entry) => ids.has(entry.id) ? { ...entry, queued: false } : entry),
+    reports: board.reports.map((report) => reportIds.has(report.id) && report.status === pendingEndorsement
+      ? { ...report, status: 'In SitRep' }
+      : report),
+  };
 }

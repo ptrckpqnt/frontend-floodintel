@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Icon } from '../../components/WorkspaceSidebar';
-import { reportStatuses } from './reportData';
+import { pendingSync, reportStatuses } from './reportData';
 import SampleFloodPhoto from './SampleFloodPhoto';
 
 const fullReportDate = new Intl.DateTimeFormat('en-PH', {
@@ -11,7 +11,7 @@ function DetailField({ label, children }) {
   return <div><dt>{label}</dt><dd>{children ?? 'Not recorded'}</dd></div>;
 }
 
-export default function ReportDetails({ report, allowCall = false, showStatus = true, onLocate }) {
+export default function ReportDetails({ report, allowCall = false, showStatus = true, showMapLink = true, onLocate }) {
   const reporter = report.reporter;
   const [photoUrl, setPhotoUrl] = useState('');
   const coordinates = Number.isFinite(report.latitude) && Number.isFinite(report.longitude)
@@ -38,7 +38,7 @@ export default function ReportDetails({ report, allowCall = false, showStatus = 
     <div className="reporter-detail-grid">
       <section className="reporter-card reporter-detail-card">
         <h2>Photo Evidence</h2>
-        {photoUrl && <img className="reporter-detail-photo" src={photoUrl} alt="Submitted flood evidence" />}
+        {photoUrl && <img className="reporter-detail-photo" src={photoUrl} alt="Flood evidence" />}
         {!report.photo && (report.isSample
           ? <SampleFloodPhoto reportId={report.id} />
           : <p>No photo attached.</p>)}
@@ -47,7 +47,7 @@ export default function ReportDetails({ report, allowCall = false, showStatus = 
       <section className="reporter-card reporter-detail-card">
         <div className="reporter-card-heading">
           <h2><Icon name="pin" /> Location</h2>
-          {coordinates && (onLocate
+          {showMapLink && coordinates && (onLocate
             ? <button type="button" className="reporter-map-link municipal-locate-button" onClick={onLocate}>View on map</button>
             : <a className="reporter-map-link" target="_blank" rel="noopener noreferrer"
               href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(coordinates)}`}>Open Maps</a>)}
@@ -87,6 +87,6 @@ export default function ReportDetails({ report, allowCall = false, showStatus = 
         </dl>
       </section>
     </div>
-    <footer className="reporter-card reporter-detail-date"><Icon name="calendar" /> Submitted on {submitted}</footer>
+    <footer className="reporter-card reporter-detail-date"><Icon name="calendar" /> {report.status === pendingSync ? 'Saved on' : 'Submitted on'} {submitted}</footer>
   </div>;
 }

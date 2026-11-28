@@ -4,12 +4,16 @@ import { depthBands } from './mapData';
 const MapboxDepthMap = lazy(() => import('./MapboxDepthMap'));
 const publicToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN?.trim();
 
-export default function FloodDepthMap({ loadButtonRef, ...props }) {
+export default function FloodDepthMap({ loadButtonRef, online, onBrowseReports, ...props }) {
   const [requested, setRequested] = useState(false);
   const tokenReady = publicToken?.startsWith('pk.');
 
   return <section className="municipal-map" aria-label="Flood depth map">
-    {requested && tokenReady ? <>
+    {!online ? <div className="municipal-map-placeholder">
+      <strong>Map unavailable offline</strong>
+      <p>Saved report details are available while you’re offline.</p>
+      <button type="button" className="reporter-primary" onClick={onBrowseReports}>Browse saved reports</button>
+    </div> : requested && tokenReady ? <>
       <Suspense fallback={<p className="municipal-map-placeholder" role="status">Loading Mapbox…</p>}>
         <MapboxDepthMap {...props} accessToken={publicToken} />
       </Suspense>
